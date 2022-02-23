@@ -17,8 +17,8 @@
 	https://ocaml.org/manual/lexyacc.html#ss:ocamllex-regexp 
 *)
 
-let digit = ['0'-'9'];
-let alpha = ['a'-'z' 'A'-'Z'];
+let digit = ['0'-'9']
+let alpha = ['a'-'z' 'A'-'Z']
 
 let int = '-'? digit+
 let id = (alpha) (alpha|digit|'_')*
@@ -30,7 +30,7 @@ let newline = '\r' | '\n' | "\r\n"
 	https://github.com/python/cpython/blob/3.10/Lib/token.py
 *)
 
-rule read_tokens = parser
+rule read_tokens = parse
 	| "(" { LPAREN }
 	| ")" { RPAREN }
 	| "{" { LBRACE }
