@@ -1,5 +1,3 @@
-/* Ocamlyacc parser for MicroC */
-
 %{
 open Ast
 %}
@@ -39,7 +37,7 @@ vdecl_list:
   /*nothing*/ { [] }
   | vdecl SEMI vdecl_list  {  $1 :: $3 }
 
-/* int x */
+/* x: int = 50 */
 vdecl:
   typ ID { ($1, $2) }
 

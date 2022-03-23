@@ -1,6 +1,6 @@
 type op = Add | Sub | Equal | Neq | Less | And | Or
 
-type typ = Int | Bool
+type typ = Int | Bool | Float | String | None
 
 type expr =
     Literal of int
