@@ -37,7 +37,7 @@ rule read_tokens = parse
 	| "}" { RBRACE }
 	| "," { COMMA }
 	| "." { DOT }
-	| ":" { SEMICOLON }
+	| ";" { SEMI }
 	| "=" { EQUAL }
 	| "+" { PLUS }
 	| "-" { MINUS }
@@ -50,23 +50,26 @@ rule read_tokens = parse
 	| "%" { REM }
 	| "<" { LANGLE }
 	| ">" { RANGLE }
+	| "->" { ARROW }
 	| "and" { AND }
 	| "or" { OR }
-	| "!" { NOT }
+	| "not" { NOT }
+	| "!" { EXCLAMATION }
 	| "==" { EQEQUAL }
 	| "!=" { NOTEQUAL }
-	| "true" { TRUE }
-	| "false" { FALSE }
+	| "True" { TRUE }
+	| "False" { FALSE }
 	| "def" { DEF }
 	| "if" { IF }
 	| "else" { ELSE }
 	| "for" { FOR }
 	| "while" { WHILE }
 	| "in" { IN }
+	| "int" { INT }
 	| whitespace {read_tokens lexbuf }
 	| "#" { SINGLE_LINE_COMMENT }
 	| "\"\"\"" { MULTI_LINE_COMMENT }
-	| int {INT (int_of_string str (Lexing.lexeme lexbuf))}
+	| int as lem {LITERAL (int_of_string lem )}
 	| newline { next_line lexbuf; red_token lexbuf }
 	| eof { EOF }
 	| _ {raise (SyntaxError ("Lexer - Illegal character: " ^ Lexing.lexeme lexbuf)) }
@@ -80,6 +83,6 @@ rule read_tokens = parse
 	and read_multi_line_comment = parse
 		| "\"\"\"" { read_tokens lexbuf }
 		| newline { next_line lexbuf; read_multi_line_comment lexbuf }
-		| eof { rasie (SyntaxError ("Lexer - Unexpected EOF"))}
+		| eof { raise (SyntaxError ("Lexer - Unexpected EOF"))}
 		| _ { read_multi_line_comment lexbuf }
 
