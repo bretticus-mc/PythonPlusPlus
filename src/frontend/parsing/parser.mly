@@ -2,9 +2,11 @@
 open Ast
 %}
 
-%token SEMI LPAREN RPAREN LBRACE RBRACE PLUS MINUS ASSIGN
-%token EQ NEQ LT AND OR
-%token IF ELSE WHILE INT BOOL
+%token SEMI LPAREN RPAREN LBRACE RBRACE PLUS MINUS ASSIGN MULT DIV
+%token EQ NEQ LT AND OR NOT DOT PLUS_EQ MINUS_EQ MULT_EQ DIV_EQ
+%token IF ELSE WHILE INT BOOL REM LANGLE RANGLE ARROW
+%token EXCLAMATION EQEQUAL NOTEQUAL TRUE FALSE
+%token DEF FOR IN
 /* return, COMMA token */
 %token RETURN COMMA
 %token <int> LITERAL
@@ -28,10 +30,12 @@ open Ast
 program:
   decls EOF { $1}
 
+
 decls:
-   /* nothing */ { ([], [])               }
+   /* nothing */ { ([], []) }
  | vdecl SEMI decls { (($1 :: fst $3), snd $3) }
  | fdecl decls { (fst $2, ($1 :: snd $2)) }
+
 
 vdecl_list:
   /*nothing*/ { [] }

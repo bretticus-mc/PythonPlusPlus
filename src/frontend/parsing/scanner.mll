@@ -30,7 +30,7 @@ let newline = '\r' | '\n' | "\r\n"
 	https://github.com/python/cpython/blob/3.10/Lib/token.py
 *)
 
-rule read_tokens = parse
+rule scan_token = parse
 	| "(" { LPAREN }
 	| ")" { RPAREN }
 	| "{" { LBRACE }
@@ -38,7 +38,7 @@ rule read_tokens = parse
 	| "," { COMMA }
 	| "." { DOT }
 	| ";" { SEMI }
-	| "=" { EQUAL }
+	| "=" { EQ }
 	| "+" { PLUS }
 	| "-" { MINUS }
 	| "*" { MULT }
@@ -66,23 +66,22 @@ rule read_tokens = parse
 	| "while" { WHILE }
 	| "in" { IN }
 	| "int" { INT }
-	| whitespace {read_tokens lexbuf }
-	| "#" { SINGLE_LINE_COMMENT }
-	| "\"\"\"" { MULTI_LINE_COMMENT }
+	| whitespace {scan_token lexbuf }
+	| "#" { read_single_line_comment lexbuf }
+	| "\"\"\"" { read_multi_line_comment lexbuf }
 	| int as lem {LITERAL (int_of_string lem )}
-	| newline { next_line lexbuf; red_token lexbuf }
+	| newline { next_line lexbuf; scan_token lexbuf }
 	| eof { EOF }
-	| _ {raise (SyntaxError ("Lexer - Illegal character: " ^ Lexing.lexeme lexbuf)) }
+	| _ as char { raise (Failure("illegal character " ^ Char.escaped char)) }
 
 	and read_single_line_comment = parse
-		| "#" { read_tokens lexbuf }
-		| newline { next_line lexbuf; read_multi_line_comment lexbuf }
-		| eof { raise (SytaxError ("Lexer - Unexpected EOF"))}
-		| _ { read_multi_line_comment lexbuf }
+		| newline { next_line lexbuf; scan_token lexbuf }
+		| eof { raise (Failure("Unexpected EOF"))}
+		| _ { read_single_line_comment lexbuf }
 	
 	and read_multi_line_comment = parse
-		| "\"\"\"" { read_tokens lexbuf }
+		| "\"\"\"" { scan_token lexbuf }
 		| newline { next_line lexbuf; read_multi_line_comment lexbuf }
-		| eof { raise (SyntaxError ("Lexer - Unexpected EOF"))}
+		| eof { raise (Failure("Unexpected EOF"))}
 		| _ { read_multi_line_comment lexbuf }
 
