@@ -3,8 +3,8 @@ open Ast
 %}
 
 %token SEMI LPAREN RPAREN LBRACE RBRACE PLUS MINUS ASSIGN MULT DIV
-%token EQ NEQ LT AND OR NOT DOT PLUS_EQ MINUS_EQ MULT_EQ DIV_EQ
-%token IF ELSE WHILE INT BOOL REM LANGLE RANGLE ARROW
+%token EQ NEQ LT GT AND OR NOT DOT PLUS_EQ MINUS_EQ MULT_EQ DIV_EQ
+%token IF ELSE WHILE INT BOOL REM RANGLE ARROW
 %token EXCLAMATION EQEQUAL NOTEQUAL TRUE FALSE
 %token DEF FOR IN
 /* return, COMMA token */
@@ -12,6 +12,7 @@ open Ast
 %token <int> LITERAL
 %token <bool> BLIT
 %token <string> ID
+%token <string> STRING
 %token EOF
 
 %start program
@@ -21,7 +22,7 @@ open Ast
 %left OR
 %left AND
 %left EQ NEQ
-%left LT
+%left LT GT
 %left PLUS MINUS
 
 %%
@@ -94,6 +95,7 @@ expr:
   | expr EQ     expr { Binop($1, Equal, $3)   }
   | expr NEQ    expr { Binop($1, Neq, $3)     }
   | expr LT     expr { Binop($1, Less,  $3)   }
+  | expr GT     expr { Binop($1, Greater,  $3)   }
   | expr AND    expr { Binop($1, And,   $3)   }
   | expr OR     expr { Binop($1, Or,    $3)   }
   | ID ASSIGN expr   { Assign($1, $3)         }

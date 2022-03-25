@@ -10,6 +10,9 @@
 			{ pos with pos_bol = lexbuf.lex_curr_pos;
 				pos_lnum = pos.pos_lnum + 1
 			}
+
+	let indent_levels = Stack.create()
+	let () = Stack.push 0 indent_levels
 }
 
 (* 
@@ -18,10 +21,8 @@
 *)
 
 let digit = ['0'-'9']
-let alpha = ['a'-'z' 'A'-'Z']
+let letter = ['a'-'z' 'A'-'Z']
 
-let int = '-'? digit+
-let id = (alpha) (alpha|digit|'_')*
 let whitespace = [' ' '\t']+
 let newline = '\r' | '\n' | "\r\n"
 
@@ -31,6 +32,7 @@ let newline = '\r' | '\n' | "\r\n"
 *)
 
 rule scan_token = parse
+	| [' ' '\t' '\r' '\n'] {scan_token lexbuf }
 	| "(" { LPAREN }
 	| ")" { RPAREN }
 	| "{" { LBRACE }
@@ -48,8 +50,8 @@ rule scan_token = parse
 	| "*=" { MULT_EQ }
 	| "/=" { DIV_EQ }
 	| "%" { REM }
-	| "<" { LANGLE }
-	| ">" { RANGLE }
+	| "<" { LT }
+	| ">" { GT }
 	| "->" { ARROW }
 	| "and" { AND }
 	| "or" { OR }
@@ -57,8 +59,8 @@ rule scan_token = parse
 	| "!" { EXCLAMATION }
 	| "==" { EQEQUAL }
 	| "!=" { NOTEQUAL }
-	| "True" { TRUE }
-	| "False" { FALSE }
+	| "True" { BLIT(true)  }
+	| "False" { BLIT(false) }
 	| "def" { DEF }
 	| "if" { IF }
 	| "else" { ELSE }
@@ -66,10 +68,10 @@ rule scan_token = parse
 	| "while" { WHILE }
 	| "in" { IN }
 	| "int" { INT }
-	| whitespace {scan_token lexbuf }
 	| "#" { read_single_line_comment lexbuf }
 	| "\"\"\"" { read_multi_line_comment lexbuf }
-	| int as lem {LITERAL (int_of_string lem )}
+	| digit+ as lem  { LITERAL(int_of_string lem) }
+	| letter (digit | letter | '_')* as lem { ID(lem) }
 	| newline { next_line lexbuf; scan_token lexbuf }
 	| eof { EOF }
 	| _ as char { raise (Failure("illegal character " ^ Char.escaped char)) }
@@ -84,4 +86,15 @@ rule scan_token = parse
 		| newline { next_line lexbuf; read_multi_line_comment lexbuf }
 		| eof { raise (Failure("Unexpected EOF"))}
 		| _ { read_multi_line_comment lexbuf }
+	
+	and read_string buf = parse
+  | '"'       { STRING (Buffer.contents buf) }
+  | [^ '"' '\\']+
+    { Buffer.add_string buf (Lexing.lexeme lexbuf);
+      read_string buf lexbuf
+    }
+  | _ { raise (Failure ("Illegal string character: " ^ Lexing.lexeme lexbuf)) }
+  | eof { raise (Failure ("String unterminated")) }
+
+
 

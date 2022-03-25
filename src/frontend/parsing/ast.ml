@@ -1,4 +1,4 @@
-type op = Add | Sub | Equal | Neq | Less | And | Or
+type op = Add | Sub | Equal | Neq | Less | Greater | And | Or
 
 type typ = Int | Bool | Float | String | None
 
@@ -9,7 +9,7 @@ type expr =
   | Binop of expr * op * expr
   | Assign of string * expr
   (* function call *)
-  | Call of string * expr list
+  | Call of string * expr list (* function name  *)
 
 type stmt =
     Block of stmt list
@@ -31,7 +31,8 @@ type func_def = {
   body: stmt list;
 }
 
-type program = bind list * func_def list
+type program = 
+    bind list * func_def list (* global variables and then list of function declarations *) 
 
 (* Pretty-printing functions *)
 let string_of_op = function
@@ -40,6 +41,7 @@ let string_of_op = function
   | Equal -> "=="
   | Neq -> "!="
   | Less -> "<"
+  | Greater -> ">"
   | And -> "&&"
   | Or -> "||"
 
@@ -66,6 +68,9 @@ let rec string_of_stmt = function
 let string_of_typ = function
     Int -> "int"
   | Bool -> "bool"
+  | Float -> "float"
+  | String -> "string"
+  | None -> "None"
 
 let string_of_vdecl (t, id) = string_of_typ t ^ " " ^ id ^ ";\n"
 
