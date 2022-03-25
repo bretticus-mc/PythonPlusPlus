@@ -28,9 +28,11 @@ let check (globals, functions) =
   (* Collect function declarations for built-in functions: no bodies *)
   let built_in_decls =
     StringMap.add "print" {
-      rtyp = Int;
+      (* rtyp = Int; *)
+      rtyp = String;
       fname = "print";
-      formals = [(Int, "x")];
+      (* formals = [(Int, "x")]; *)
+      formals = [(String, "x")];
       locals = []; body = [] } StringMap.empty
   in
 
@@ -84,6 +86,7 @@ let check (globals, functions) =
     let rec check_expr = function
         Literal l -> (Int, SLiteral l)
       | BoolLit l -> (Bool, SBoolLit l)
+      | StringLit l -> (String, SStringLit l)
       | Id var -> (type_of_identifier var, SId var)
       | Assign(var, e) as ex ->
         let lt = type_of_identifier var

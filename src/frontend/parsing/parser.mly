@@ -9,6 +9,7 @@ open Ast
 %token DEF FOR IN
 /* return, COMMA token */
 %token RETURN COMMA
+%token <float> FLOAT
 %token <int> LITERAL
 %token <bool> BLIT
 %token <string> ID
@@ -49,6 +50,8 @@ vdecl:
 typ:
     INT   { Int   }
   | BOOL  { Bool  }
+  | FLOAT  { Float }
+  | STRING { String }
 
 /* fdecl */
 fdecl:
@@ -86,9 +89,11 @@ stmt:
   /* return */
   | RETURN expr SEMI                        { Return $2      }
 
+
 expr:
     LITERAL          { Literal($1)            }
   | BLIT             { BoolLit($1)            }
+  | STRING           { StringLit($1) } 
   | ID               { Id($1)                 }
   | expr PLUS   expr { Binop($1, Add,   $3)   }
   | expr MINUS  expr { Binop($1, Sub,   $3)   }

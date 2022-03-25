@@ -71,7 +71,9 @@ rule scan_token = parse
 	| "#" { read_single_line_comment lexbuf }
 	| "\"\"\"" { read_multi_line_comment lexbuf }
 	| digit+ as lem  { LITERAL(int_of_string lem) }
+	| '"'['a'-'z' 'A'-'Z' ' ']*'"' as lem {STRING(lem)}
 	| letter (digit | letter | '_')* as lem { ID(lem) }
+	
 	| newline { next_line lexbuf; scan_token lexbuf }
 	| eof { EOF }
 	| _ as char { raise (Failure("illegal character " ^ Char.escaped char)) }
@@ -87,14 +89,6 @@ rule scan_token = parse
 		| eof { raise (Failure("Unexpected EOF"))}
 		| _ { read_multi_line_comment lexbuf }
 	
-	and read_string buf = parse
-  | '"'       { STRING (Buffer.contents buf) }
-  | [^ '"' '\\']+
-    { Buffer.add_string buf (Lexing.lexeme lexbuf);
-      read_string buf lexbuf
-    }
-  | _ { raise (Failure ("Illegal string character: " ^ Lexing.lexeme lexbuf)) }
-  | eof { raise (Failure ("String unterminated")) }
 
 
 
