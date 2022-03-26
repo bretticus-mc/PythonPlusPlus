@@ -33,8 +33,12 @@ type func_def = {
   body: stmt list;
 }
 
+type code = 
+  Func_def of func_def
+  | Stmt of stmt
+
 type program = 
-    bind list * func_def list (* global variables and then list of function declarations *) 
+    code list (* global variables and then list of function declarations *) 
 
 (* Pretty-printing functions *)
 let string_of_op = function

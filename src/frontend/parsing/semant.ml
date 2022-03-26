@@ -10,7 +10,7 @@ module StringMap = Map.Make(String)
 
    Check each global variable, then check each function *)
 
-let check (globals, functions) =
+let check (code) =
 
   (* Verify a list of bindings has no duplicate names *)
   let check_binds (kind : string) (binds : (typ * string) list) =
@@ -22,8 +22,9 @@ let check (globals, functions) =
     in dups (List.sort (fun (_,a) (_,b) -> compare a b) binds)
   in
 
-  (* Make sure no globals duplicate *)
+  (* Make sure no globals duplicate 
   check_binds "global" globals;
+  *)
 
   (* Collect function declarations for built-in functions: no bodies *)
   let built_in_decls =
@@ -48,8 +49,11 @@ let check (globals, functions) =
     | _ ->  StringMap.add n fd map
   in
 
-  (* Collect all function names into one symbol table *)
+  (* Collect all function names into one symbol table 
   let function_decls = List.fold_left add_func built_in_decls functions
+  in
+  *)
+  let function_decls = List.fold_left add_func built_in_decls []
   in
 
   (* Return a function from our symbol table *)
@@ -65,6 +69,8 @@ let check (globals, functions) =
     check_binds "formal" func.formals;
     check_binds "local" func.locals;
 
+    add_func built_in_decls func;
+
     (* Raise an exception if the given rvalue type cannot be assigned to
        the given lvalue type *)
     let check_assign lvaluet rvaluet err =
@@ -73,7 +79,8 @@ let check (globals, functions) =
 
     (* Build local symbol table of variables for this function *)
     let symbols = List.fold_left (fun m (ty, name) -> StringMap.add name ty m)
-        StringMap.empty (globals @ func.formals @ func.locals )
+        (* StringMap.empty (globals @ func.formals @ func.locals ) *)
+        StringMap.empty (func.formals @ func.locals )
     in
 
     (* Return a variable from our local symbol table *)
@@ -143,7 +150,7 @@ let check (globals, functions) =
       | Block sl :: sl'  -> check_stmt_list (sl @ sl') (* Flatten blocks *)
       | s :: sl -> check_stmt s :: check_stmt_list sl
     (* Return a semantically-checked statement i.e. containing sexprs *)
-    and check_stmt =function
+    and check_stmt = function
       (* A block is correct if each statement is correct and nothing
          follows any Return statement.  Nested blocks are flattened. *)
         Block sl -> SBlock (check_stmt_list sl)
@@ -158,7 +165,8 @@ let check (globals, functions) =
         else raise (
             Failure ("return gives " ^ string_of_typ t ^ " expected " ^
                      string_of_typ func.rtyp ^ " in " ^ string_of_expr e))
-    in (* body of check_func *)
+    in 
+    (* body of check_func *)
     { srtyp = func.rtyp;
       sfname = func.fname;
       sformals = func.formals;
@@ -166,4 +174,9 @@ let check (globals, functions) =
       sbody = check_stmt_list func.body
     }
   in
-  (globals, List.map check_func functions)
+  let check_code = function
+    Func_def(f) -> check_func f
+    | Stmt(s) -> check_stmt s
+  in 
+
+  List.map (check_code code)
