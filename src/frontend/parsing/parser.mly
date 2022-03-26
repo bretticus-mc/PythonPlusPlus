@@ -34,16 +34,8 @@ program:
 
 decls:
   /* nothing */ { ([]) }
- | fdecl decls { (Func_def $2)::$2 }
+ | fdecl decls { (Func_def $1)::$2 }
  | stmt decls { (Stmt $1)::$2 }
-
-/* 
-decls:
-   { ([], []) }
- | vdecl SEMI decls { (($1 :: fst $3), snd $3) }
- | fdecl decls { (fst $2, ($1 :: snd $2)) }
- | stmt decls {}
-*/
 
 vdecl_list:
   /*nothing*/ { [] }

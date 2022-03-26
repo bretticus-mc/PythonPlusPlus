@@ -68,7 +68,17 @@ let string_of_sfdecl fdecl =
   String.concat "" (List.map string_of_sstmt fdecl.sbody) ^
   "}\n"
 
-let string_of_sprogram (vars, funcs) =
+let string_of_scode code = match code with
+  SFunc_def(f) -> string_of_sfdecl f
+| SStmt(s) -> string_of_sstmt s
+
+let string_of_sprogram (code) =
+  "\n\nSementically checked program: \n\n" ^
+  String.concat "" (List.map string_of_scode code)
+
+(* 
+let string_of_sprogram (code) =
   "\n\nSementically checked program: \n\n" ^
   String.concat "" (List.map string_of_vdecl vars) ^ "\n" ^
   String.concat "\n" (List.map string_of_sfdecl funcs)
+*)
