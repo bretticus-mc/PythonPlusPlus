@@ -12,7 +12,8 @@
 			}
 
 	let indent_levels = Stack.create()
-	let () = Stack.push 0 indent_levels
+	let () = Stack.push 0 indent_levels; ()
+	(* let scan_queue = Queue.create() *)
 }
 
 (* 
@@ -71,7 +72,7 @@ rule scan_token = parse
 	| "#" { read_single_line_comment lexbuf }
 	| "\"\"\"" { read_multi_line_comment lexbuf }
 	| digit+ as lem  { LITERAL(int_of_string lem) }
-	| '"'['a'-'z' 'A'-'Z' ' ']*'"' as lem {STRING(lem)}
+	| '"'['a'-'z' 'A'-'Z' ' ']*'"' as lem {STRING_LITERAL(lem)}
 	| letter (digit | letter | '_')* as lem { ID(lem) }
 	
 	| newline { next_line lexbuf; scan_token lexbuf }

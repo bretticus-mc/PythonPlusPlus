@@ -4,7 +4,7 @@ open Ast
 
 %token SEMI LPAREN RPAREN LBRACE RBRACE PLUS MINUS ASSIGN MULT DIV
 %token EQ NEQ LT GT AND OR NOT DOT PLUS_EQ MINUS_EQ MULT_EQ DIV_EQ
-%token IF ELSE WHILE INT BOOL REM RANGLE ARROW
+%token IF ELSE WHILE INT BOOL REM RANGLE ARROW STRING
 %token EXCLAMATION EQEQUAL NOTEQUAL TRUE FALSE
 %token DEF FOR IN
 /* return, COMMA token */
@@ -13,7 +13,7 @@ open Ast
 %token <int> LITERAL
 %token <bool> BLIT
 %token <string> ID
-%token <string> STRING
+%token <string> STRING_LITERAL
 %token EOF
 
 %start program
@@ -36,6 +36,7 @@ decls:
   /* nothing */ { ([]) }
  | fdecl decls { (Func_def $1)::$2 }
  | stmt decls { (Stmt $1)::$2 }
+
 
 vdecl_list:
   /*nothing*/ { [] }
@@ -91,7 +92,7 @@ stmt:
 expr:
     LITERAL          { Literal($1)            }
   | BLIT             { BoolLit($1)            }
-  | STRING           { StringLit($1) } 
+  | STRING_LITERAL   { StringLit($1) } 
   | ID               { Id($1)                 }
   | expr PLUS   expr { Binop($1, Add,   $3)   }
   | expr MINUS  expr { Binop($1, Sub,   $3)   }
