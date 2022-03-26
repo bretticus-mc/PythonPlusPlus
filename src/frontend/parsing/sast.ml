@@ -30,10 +30,11 @@ type sfunc_def = {
   sbody: sstmt list;
 }
 
-type sprogram = bind list * sfunc_def list
+type scode = 
+  SFunc_def of sfunc_def
+  | SStmt of sstmt
 
-type sstring_lit = 
-  | StringList of string
+type sprogram = scode list
 
 (* Pretty-printing functions *)
 let rec string_of_sexpr (t, e) =
