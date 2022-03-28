@@ -32,11 +32,10 @@ open Ast
 program:
   decls EOF { $1}
 
-
 decls:
-   /* nothing */ { ([], []) }
- | vdecl SEMI decls { (($1 :: fst $3), snd $3) }
- | fdecl decls { (fst $2, ($1 :: snd $2)) }
+  /* nothing */ { ([]) }
+ | fdecl decls { (Func_def $1)::$2 }
+ | stmt decls { (Stmt $1)::$2 }
 
 
 vdecl_list:
@@ -93,7 +92,7 @@ stmt:
 expr:
     LITERAL          { Literal($1)            }
   | BLIT             { BoolLit($1)            }
-  | STRING_LITERAL           { StringLit($1) } 
+  | STRING_LITERAL   { StringLit($1) } 
   | ID               { Id($1)                 }
   | expr PLUS   expr { Binop($1, Add,   $3)   }
   | expr MINUS  expr { Binop($1, Sub,   $3)   }

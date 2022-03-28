@@ -30,10 +30,11 @@ type sfunc_def = {
   sbody: sstmt list;
 }
 
-type sprogram = bind list * sfunc_def list
+type scode = 
+  SFunc_def of sfunc_def
+  | SStmt of sstmt
 
-type sstring_lit = 
-  | StringList of string
+type sprogram = scode list
 
 (* Pretty-printing functions *)
 let rec string_of_sexpr (t, e) =
@@ -67,7 +68,17 @@ let string_of_sfdecl fdecl =
   String.concat "" (List.map string_of_sstmt fdecl.sbody) ^
   "}\n"
 
-let string_of_sprogram (vars, funcs) =
+let string_of_scode code = match code with
+  SFunc_def(f) -> string_of_sfdecl f
+| SStmt(s) -> string_of_sstmt s
+
+let string_of_sprogram (code) =
+  "\n\nSementically checked program: \n\n" ^
+  String.concat "" (List.map string_of_scode code)
+
+(* 
+let string_of_sprogram (code) =
   "\n\nSementically checked program: \n\n" ^
   String.concat "" (List.map string_of_vdecl vars) ^ "\n" ^
   String.concat "\n" (List.map string_of_sfdecl funcs)
+*)

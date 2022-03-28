@@ -12,7 +12,8 @@
 			}
 
 	let indent_levels = Stack.create()
-	let () = Stack.push 0 indent_levels
+	let () = Stack.push 0 indent_levels; ()
+	(* let scan_queue = Queue.create() *)
 }
 
 (* 
