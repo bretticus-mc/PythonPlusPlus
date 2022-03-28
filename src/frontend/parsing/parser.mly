@@ -10,7 +10,7 @@ open Ast
 /* return, COMMA token */
 %token RETURN COMMA
 %token <float> FLOAT
-%token <int> LITERAL
+%token <int> INT_LITERAL
 %token <bool> BLIT
 %token <string> ID
 %token <string> STRING_LITERAL
@@ -40,7 +40,7 @@ decls:
 
 vdecl_list:
   /*nothing*/ { [] }
-  | vdecl SEMI vdecl_list  {  $1 :: $3 }
+  | vdecl vdecl_list  {  $1 :: $2 }
 
 /* x: int = 50 */
 vdecl:
@@ -79,7 +79,7 @@ stmt_list:
   | stmt stmt_list  { $1::$2 }
 
 stmt:
-    expr SEMI                               { Expr $1      }
+    expr SEMI                              { Expr $1      }
   | LBRACE stmt_list RBRACE                 { Block $2 }
   /* if (condition) { block1} else {block2} */
   /* if (condition) stmt else stmt */
@@ -90,7 +90,7 @@ stmt:
 
 
 expr:
-    LITERAL          { Literal($1)            }
+    INT_LITERAL         { Literal($1)            }
   | BLIT             { BoolLit($1)            }
   | STRING_LITERAL   { StringLit($1) } 
   | ID               { Id($1)                 }
