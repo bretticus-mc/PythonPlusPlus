@@ -49,11 +49,16 @@ let check (code) =
     | _ ->  StringMap.add n fd map
   in
 
-  (* Collect all function names into one symbol table 
+  let build_func_table map = function
+    Func_def(f) -> add_func map f
+    | _ -> map
+in
+
+    (* Collect all function names into one symbol table 
   let function_decls = List.fold_left add_func built_in_decls functions
   in
   *)
-  let function_decls = List.fold_left add_func built_in_decls []
+  let function_decls = List.fold_left build_func_table built_in_decls code
   in
 
   (* Return a function from our symbol table *)
@@ -152,7 +157,10 @@ and check_top_stmt curr_symbol_table = function
     check_binds "formal" func.formals;
     check_binds "local" func.locals;
 
-    add_func built_in_decls func;
+    (* 
+    let updated_function_decls = add_func function_decls func in
+    ignore(updated_function_decls);
+    *)
 
     (* Raise an exception if the given rvalue type cannot be assigned to
        the given lvalue type *)
