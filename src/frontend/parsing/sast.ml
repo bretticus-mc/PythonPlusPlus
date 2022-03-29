@@ -60,11 +60,11 @@ let rec string_of_sstmt = function
   | SWhile(e, s) -> "while (" ^ string_of_sexpr e ^ ") " ^ string_of_sstmt s
 
 let string_of_sfdecl fdecl =
-  string_of_typ fdecl.srtyp ^ " " ^
-  fdecl.sfname ^ "(" ^ String.concat ", " (List.map snd fdecl.sformals) ^
-  ")\n{\n" ^
+  "def " ^ fdecl.sfname ^ "(" ^ 
+  String.concat ", " (List.map snd fdecl.sformals) ^
+  ") -> " ^ string_of_typ fdecl.srtyp ^ ": \n" ^
   String.concat "" (List.map string_of_sstmt fdecl.sbody) ^
-  "}\n"
+  "\n"
 
 let string_of_scode code = match code with
   SFunc_def(f) -> string_of_sfdecl f
