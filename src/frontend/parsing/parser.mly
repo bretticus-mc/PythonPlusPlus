@@ -5,7 +5,7 @@ open Ast
 %token SEMI LPAREN RPAREN LBRACE RBRACE PLUS MINUS ASSIGN MULT DIV
 %token EQ NEQ LT GT AND OR NOT DOT PLUS_EQ MINUS_EQ MULT_EQ DIV_EQ
 %token IF ELSE WHILE INT STRING BOOL REM RANGLE ARROW
-%token EXCLAMATION EQEQUAL NOTEQUAL TRUE FALSE
+%token EXCLAMATION EQEQUAL NOTEQUAL TRUE FALSE NONE COLON
 %token DEF FOR IN NEWLINE
 /* return, COMMA token */
 %token RETURN COMMA
@@ -38,10 +38,6 @@ decls:
  | stmt decls { (Stmt $1)::$2 }
 
 
-vdecl_list:
-  /*nothing*/ { [] }
-  | vdecl vdecl_list  {  $1 :: $2 }
-
 /* x: int = 50 */
 vdecl:
   typ ID { ($1, $2) }
@@ -51,16 +47,16 @@ typ:
   | BOOL  { Bool  }
   | FLOAT  { Float }
   | STRING { String }
+  | NONE { None }
 
 /* fdecl */
 fdecl:
-  DEF ID LPAREN formals_opt RPAREN ARROW typ LBRACE vdecl_list stmt_list RBRACE
+  DEF ID LPAREN formals_opt RPAREN ARROW typ COLON NEWLINE stmt_list NEWLINE
   {
     {
       rtyp= $7;
       fname= $2;
       formals= $4;
-      locals= $9;
       body= $10
     }
   }

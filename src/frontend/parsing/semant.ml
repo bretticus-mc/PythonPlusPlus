@@ -34,7 +34,7 @@ let check (code) =
       fname = "print";
       (* formals = [(Int, "x")]; *)
       formals = [(String, "x")];
-      locals = []; body = [] } StringMap.empty
+      body = [] } StringMap.empty
   in
 
   (* Add function name to symbol table *)
@@ -155,8 +155,6 @@ and check_top_stmt curr_symbol_table = function
   let check_func curr_symbol_table func =
     (* Make sure no formals or locals are void or duplicates *)
     check_binds "formal" func.formals;
-    check_binds "local" func.locals;
-
     (* 
     let updated_function_decls = add_func function_decls func in
     ignore(updated_function_decls);
@@ -171,7 +169,7 @@ and check_top_stmt curr_symbol_table = function
     (* Build local symbol table of variables for this function *)
     let symbols = List.fold_left (fun m (ty, name) -> StringMap.add name ty m)
         (* StringMap.empty (globals @ func.formals @ func.locals ) *)
-        StringMap.empty (func.formals @ func.locals )
+        StringMap.empty (func.formals)
     in
 
     (* Return a variable from our local symbol table *)
@@ -260,7 +258,6 @@ and check_top_stmt curr_symbol_table = function
     { srtyp = func.rtyp;
       sfname = func.fname;
       sformals = func.formals;
-      slocals  = func.locals;
       sbody = check_stmt_list func.body
     }
   in

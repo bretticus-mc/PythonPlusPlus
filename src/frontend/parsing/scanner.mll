@@ -35,13 +35,14 @@ let newline = '\r' | '\n' | "\r\n"
 *)
 
 rule scan_token = parse
-(*	| [' ' '\t' '\r' '\n'] {scan_token lexbuf } *)
+	| [' ' '\t' '\r' ] {scan_token lexbuf } (* removed \n *)
 	| "(" { LPAREN }
 	| ")" { RPAREN }
 	| "{" { LBRACE }
 	| "}" { RBRACE }
 	| "," { COMMA }
 	| "." { DOT }
+	| ":" { COLON }
 	| ";" { SEMI }
 	| "=" { EQ }
 	| "+" { PLUS }
@@ -71,6 +72,7 @@ rule scan_token = parse
 	| "while" { WHILE }
 	| "in" { IN }
 	| "int" { INT }
+	| "None" { NONE }
 	| "#" { read_single_line_comment lexbuf }
 	| "\"\"\"" { read_multi_line_comment lexbuf }
 	| digit+ as lem  { INT_LITERAL(int_of_string lem) }
