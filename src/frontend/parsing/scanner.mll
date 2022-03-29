@@ -4,6 +4,7 @@
 
 	exception SytaxError of string
 
+	
 	let next_line lexbuf = 
 		let pos = lexbuf.lex_curr_p in 
 		lexbuf.lex_curr_p <- 
@@ -11,6 +12,7 @@
 				pos_lnum = pos.pos_lnum + 1
 			}
 
+	
 	let indent_levels = Stack.create()
 	let () = Stack.push 0 indent_levels; ()
 	(* let scan_queue = Queue.create() *)
@@ -33,7 +35,7 @@ let newline = '\r' | '\n' | "\r\n"
 *)
 
 rule scan_token = parse
-	| [' ' '\t' '\r' '\n'] {scan_token lexbuf }
+(*	| [' ' '\t' '\r' '\n'] {scan_token lexbuf } *)
 	| "(" { LPAREN }
 	| ")" { RPAREN }
 	| "{" { LBRACE }
@@ -74,8 +76,7 @@ rule scan_token = parse
 	| digit+ as lem  { INT_LITERAL(int_of_string lem) }
 	| '"'['a'-'z' 'A'-'Z' ' ']*'"' as lem {STRING_LITERAL(lem)}
 	| letter (digit | letter | '_')* as lem { ID(lem) }
-	
-	| newline { next_line lexbuf; scan_token lexbuf }
+	| ['\n']  { NEWLINE }
 	| eof { EOF }
 	| _ as char { raise (Failure("illegal character " ^ Char.escaped char)) }
 

@@ -48,8 +48,8 @@ let string_of_op = function
   | Neq -> "!="
   | Less -> "<"
   | Greater -> ">"
-  | And -> "&&"
-  | Or -> "||"
+  | And -> "and"
+  | Or -> "or"
 
 let rec string_of_expr = function
     Literal(l) -> string_of_int l

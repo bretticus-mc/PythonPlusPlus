@@ -6,7 +6,7 @@ open Ast
 %token EQ NEQ LT GT AND OR NOT DOT PLUS_EQ MINUS_EQ MULT_EQ DIV_EQ
 %token IF ELSE WHILE INT STRING BOOL REM RANGLE ARROW
 %token EXCLAMATION EQEQUAL NOTEQUAL TRUE FALSE
-%token DEF FOR IN
+%token DEF FOR IN NEWLINE
 /* return, COMMA token */
 %token RETURN COMMA
 %token <float> FLOAT
@@ -79,7 +79,8 @@ stmt_list:
   | stmt stmt_list  { $1::$2 }
 
 stmt:
-    expr SEMI                              { Expr $1      }
+    expr NEWLINE                            { Expr $1 }
+  | expr EOF                                { Expr $1 }
   | LBRACE stmt_list RBRACE                 { Block $2 }
   /* if (condition) { block1} else {block2} */
   /* if (condition) stmt else stmt */
@@ -90,7 +91,7 @@ stmt:
 
 
 expr:
-    INT_LITERAL         { Literal($1)            }
+    INT_LITERAL      { Literal($1)            }
   | BLIT             { BoolLit($1)            }
   | STRING_LITERAL   { StringLit($1) } 
   | ID               { Id($1)                 }
