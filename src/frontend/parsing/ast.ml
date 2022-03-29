@@ -52,8 +52,8 @@ let string_of_op = function
 
 let rec string_of_expr = function
     Literal(l) -> string_of_int l
-  | BoolLit(true) -> "true"
-  | BoolLit(false) -> "false"
+  | BoolLit(true) -> "True"
+  | BoolLit(false) -> "False"
   | StringLit(s) -> s
   | Id(s) -> s
   | Binop(e1, o, e2) ->
@@ -65,8 +65,8 @@ let rec string_of_expr = function
 let rec string_of_stmt = function
     Block(stmts) ->
     "{\n" ^ String.concat "" (List.map string_of_stmt stmts) ^ "}\n"
-  | Expr(expr) -> string_of_expr expr ^ ";\n"
-  | Return(expr) -> "return " ^ string_of_expr expr ^ ";\n"
+  | Expr(expr) -> string_of_expr expr ^ "\n"
+  | Return(expr) -> "return " ^ string_of_expr expr ^ "\n"
   | If(e, s1, s2) ->  "if (" ^ string_of_expr e ^ ")\n" ^
                       string_of_stmt s1 ^ "else\n" ^ string_of_stmt s2
   | While(e, s) -> "while (" ^ string_of_expr e ^ ") " ^ string_of_stmt s
@@ -78,16 +78,16 @@ let string_of_typ = function
   | String -> "String"
   | None -> "None"
 
-let string_of_vdecl (t, id) = string_of_typ t ^ " " ^ id ^ ";\n"
-
 let string_of_fdecl fdecl =
-  string_of_typ fdecl.rtyp ^ " " ^
-  fdecl.fname ^ "(" ^ String.concat ", " (List.map snd fdecl.formals) ^
-  ")\n{\n" ^
-  String.concat "" (List.map string_of_stmt fdecl.body) ^
-  "}\n"
+    "def " ^ fdecl.fname ^ "(" ^ 
+    String.concat ", " (List.map snd fdecl.formals) ^
+    ") -> " ^ string_of_typ fdecl.rtyp ^ ": \n" ^
+    String.concat "" (List.map string_of_stmt fdecl.body)
 
-let string_of_program (vars, funcs) =
+let string_of_scode code = match code with
+  Func_def(f) -> string_of_fdecl f
+| Stmt(s) -> string_of_stmt s
+
+let string_of_program (code) =
   "\n\nParsed program: \n\n" ^
-  String.concat "" (List.map string_of_vdecl vars) ^ "\n" ^
-  String.concat "\n" (List.map string_of_fdecl funcs)
+  String.concat "\n" (List.map string_of_scode code)
