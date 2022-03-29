@@ -87,7 +87,8 @@ stmt:
   | IF LPAREN expr RPAREN stmt ELSE stmt    { If($3, $5, $7) }
   | WHILE LPAREN expr RPAREN stmt           { While ($3, $5)  }
   /* return */
-  | RETURN expr SEMI                        { Return $2      }
+  | RETURN expr NEWLINE                        { Return $2      }
+  | RETURN expr EOF                        { Return $2      }
 
 
 expr:

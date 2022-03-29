@@ -41,8 +41,8 @@ let rec string_of_sexpr (t, e) =
   "(" ^ string_of_typ t ^ " : " ^ (match e with
         SLiteral(l) -> string_of_int l
       | SStringLit(l) -> l
-      | SBoolLit(true) -> "true"
-      | SBoolLit(false) -> "false"
+      | SBoolLit(true) -> "True"
+      | SBoolLit(false) -> "False"
       | SId(s) -> s
       | SBinop(e1, o, e2) ->
         string_of_sexpr e1 ^ " " ^ string_of_op o ^ " " ^ string_of_sexpr e2
