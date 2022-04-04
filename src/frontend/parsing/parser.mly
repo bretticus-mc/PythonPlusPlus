@@ -40,7 +40,7 @@ decls:
 
 /* x: int = 50 */
 vdecl:
-  typ ID { ($1, $2) }
+  ID COLON typ { ($1, $3) }
 
 typ:
     INT   { Int   }
@@ -49,7 +49,9 @@ typ:
   | STRING { String }
   | NONE { None }
 
-/* fdecl */
+/* fdecl 
+def main(x: int, y: int) -> None:
+*/
 fdecl:
   DEF ID LPAREN formals_opt RPAREN ARROW typ COLON NEWLINE stmt_list NEWLINE
   {
@@ -66,6 +68,7 @@ formals_opt:
   /*nothing*/ { [] }
   | formals_list { $1 }
 
+/* main(x: int, y: int) */
 formals_list:
   vdecl { [$1] }
   | vdecl COMMA formals_list { $1::$3 }

@@ -21,8 +21,9 @@ type stmt =
   (* return *)
   | Return of expr
 
-(* int x: name binding *)
-type bind = typ * string
+(* int x: name binding 
+type bind = typ * string *)
+type bind = string * typ
 
 (* func_def: ret_typ fname formals locals body *)
 type func_def = {
@@ -80,7 +81,7 @@ let string_of_typ = function
 
 let string_of_fdecl fdecl =
     "def " ^ fdecl.fname ^ "(" ^ 
-    String.concat ", " (List.map snd fdecl.formals) ^
+    String.concat ", " (List.map fst fdecl.formals) ^
     ") -> " ^ string_of_typ fdecl.rtyp ^ ": \n" ^
     String.concat "" (List.map string_of_stmt fdecl.body)
 

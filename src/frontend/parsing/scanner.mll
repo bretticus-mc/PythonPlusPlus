@@ -72,6 +72,7 @@ rule scan_token = parse
 	| "while" { WHILE }
 	| "in" { IN }
 	| "int" { INT }
+	| "String" { STRING }
 	| "None" { NONE }
 	| "#" { read_single_line_comment lexbuf }
 	| "\"\"\"" { read_multi_line_comment lexbuf }
