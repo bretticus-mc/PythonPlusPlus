@@ -3,6 +3,7 @@
 open Ast
 
 type sexpr = typ * sx
+
 and sx =
     SLiteral of int
   | SBoolLit of bool
@@ -61,7 +62,7 @@ let rec string_of_sstmt = function
 
 let string_of_sfdecl fdecl =
   "def " ^ fdecl.sfname ^ "(" ^ 
-  String.concat ", " (List.map snd fdecl.sformals) ^
+  String.concat ", " (List.map fst fdecl.sformals) ^
   ") -> " ^ string_of_typ fdecl.srtyp ^ ": \n" ^
   String.concat "" (List.map string_of_sstmt fdecl.sbody) ^
   "\n"

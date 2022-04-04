@@ -13,13 +13,13 @@ module StringMap = Map.Make(String)
 let check (code) =
 
   (* Verify a list of bindings has no duplicate names *)
-  let check_binds (kind : string) (binds : (typ * string) list) =
+  let check_binds (kind : string) (binds : (string * typ) list) =
     let rec dups = function
         [] -> ()
-      |	((_,n1) :: (_,n2) :: _) when n1 = n2 ->
+      |	((n1, _) :: (n2, _) :: _) when n1 = n2 ->
         raise (Failure ("duplicate " ^ kind ^ " " ^ n1))
       | _ :: t -> dups t
-    in dups (List.sort (fun (_,a) (_,b) -> compare a b) binds)
+    in dups (List.sort (fun (a, _) (b, _) -> compare a b) binds)
   in
 
   (* Make sure no globals duplicate 
@@ -33,7 +33,7 @@ let check (code) =
       rtyp = String;
       fname = "print";
       (* formals = [(Int, "x")]; *)
-      formals = [(String, "x")];
+      formals = [("x", String)];
       body = [] } StringMap.empty
   in
 
@@ -118,7 +118,7 @@ let rec check_expr symbol_table = function
       if List.length args != param_length then
         raise (Failure ("expecting " ^ string_of_int param_length ^
                         " arguments in " ^ string_of_expr call))
-      else let check_call (ft, _) e =
+      else let check_call (_, ft) e =
               let (et, e') = check_expr symbol_table e in
               let err = "illegal argument found " ^ string_of_typ et ^
                         " expected " ^ string_of_typ ft ^ " in " ^ string_of_expr e
@@ -167,7 +167,7 @@ and check_top_stmt curr_symbol_table = function
     in
 
     (* Build local symbol table of variables for this function *)
-    let symbols = List.fold_left (fun m (ty, name) -> StringMap.add name ty m)
+    let symbols = List.fold_left (fun m (name, ty) -> StringMap.add name ty m)
         (* StringMap.empty (globals @ func.formals @ func.locals ) *)
         StringMap.empty (func.formals)
     in
@@ -217,7 +217,7 @@ and check_top_stmt curr_symbol_table = function
         if List.length args != param_length then
           raise (Failure ("expecting " ^ string_of_int param_length ^
                           " arguments in " ^ string_of_expr call))
-        else let check_call (ft, _) e =
+        else let check_call (_, ft) e =
                let (et, e') = check_expr e in
                let err = "illegal argument found " ^ string_of_typ et ^
                          " expected " ^ string_of_typ ft ^ " in " ^ string_of_expr e
