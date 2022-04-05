@@ -8,6 +8,7 @@ and sx =
     SLiteral of int
   | SBoolLit of bool
   | SId of string
+  | SPointer_Ref of string
   | SBinop of sexpr * op * sexpr
   | SAssign of string * sexpr
   | SStringLit of string
@@ -41,6 +42,7 @@ let rec string_of_sexpr (t, e) =
   "(" ^ string_of_typ t ^ " : " ^ (match e with
         SLiteral(l) -> string_of_int l
       | SStringLit(l) -> l
+      | SPointer_Ref(p) -> p
       | SBoolLit(true) -> "True"
       | SBoolLit(false) -> "False"
       | SId(s) -> s

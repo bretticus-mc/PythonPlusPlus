@@ -1,11 +1,12 @@
 type op = Add | Sub | Equal | Neq | Less | Greater | And | Or
 
-type typ = Int | Bool | Float | String | None
+type typ = Int | Bool | Float | String | Pointer | None
 
 type expr =
     Literal of int
   | BoolLit of bool
   | Id of string
+  | Pointer_Ref of string
   | StringLit of string
   | Binop of expr * op * expr
   | Assign of string * expr
@@ -57,6 +58,7 @@ let rec string_of_expr = function
   | BoolLit(false) -> "False"
   | StringLit(s) -> s
   | Id(s) -> s
+  | Pointer_Ref(p) -> p
   | Binop(e1, o, e2) ->
     string_of_expr e1 ^ " " ^ string_of_op o ^ " " ^ string_of_expr e2
   | Assign(v, e) -> v ^ " = " ^ string_of_expr e
@@ -77,6 +79,7 @@ let string_of_typ = function
   | Bool -> "bool"
   | Float -> "float"
   | String -> "String"
+  | Pointer -> "Pointer Reference"
   | None -> "None"
 
 let string_of_fdecl fdecl =

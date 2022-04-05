@@ -84,6 +84,7 @@ let rec check_expr symbol_table = function
       Literal l -> (Int, SLiteral l)
     | BoolLit l -> (Bool, SBoolLit l)
     | StringLit l -> (String, SStringLit l)
+    | Pointer_Ref p -> (Pointer, SPointer_Ref p )
     | Id var -> (type_of_identifier symbol_table var, SId var)
     | Assign(var, e) as ex ->
       let lt = type_of_identifier symbol_table var
@@ -183,6 +184,7 @@ and check_top_stmt curr_symbol_table = function
         Literal l -> (Int, SLiteral l)
       | BoolLit l -> (Bool, SBoolLit l)
       | StringLit l -> (String, SStringLit l)
+      | Pointer_Ref p -> (Pointer, SPointer_Ref p)
       | Id var -> (type_of_identifier var, SId var)
       | Assign(var, e) as ex ->
         let lt = type_of_identifier var

@@ -78,6 +78,7 @@ rule scan_token = parse
 	| "\"\"\"" { read_multi_line_comment lexbuf }
 	| digit+ as lem  { INT_LITERAL(int_of_string lem) }
 	| '"'['a'-'z' 'A'-'Z' ' ']*'"' as lem {STRING_LITERAL(lem)}
+	| "*" letter (digit | letter | '_')* as lem { POINTER_REF(lem) }
 	| letter (digit | letter | '_')* as lem { ID(lem) }
 	| ['\n']  { NEWLINE }
 	| eof { EOF }

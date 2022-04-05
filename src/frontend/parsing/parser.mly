@@ -13,6 +13,7 @@ open Ast
 %token <int> INT_LITERAL
 %token <bool> BLIT
 %token <string> ID
+%token <string> POINTER_REF
 %token <string> STRING_LITERAL
 %token EOF
 
@@ -95,6 +96,7 @@ expr:
   | BLIT             { BoolLit($1)            }
   | STRING_LITERAL   { StringLit($1) } 
   | ID               { Id($1)                 }
+  | POINTER_REF      { Pointer_Ref($1)}
   | expr PLUS   expr { Binop($1, Add,   $3)   }
   | expr MINUS  expr { Binop($1, Sub,   $3)   }
   | expr EQ     expr { Binop($1, Equal, $3)   }
