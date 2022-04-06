@@ -12,10 +12,24 @@
 				pos_lnum = pos.pos_lnum + 1
 			}
 
-	
+(*	
 	let indent_levels = Stack.create()
 	let () = Stack.push 0 indent_levels; ()
 	(* let scan_queue = Queue.create() *)
+}
+*)
+
+
+(* In ocaml 4.08+ you could write let tab_count_stack = Stack.of_seq (List.to_seq [0]) *)
+let tab_count_stack = Stack.create ()
+let add_zero_to_stack = (Stack.push 0 tab_count_stack); ()
+let token_queue = Queue.create ()
+
+let rec enqueue_dedents n = if n > 0 then (Queue.add DEDENT token_queue; (enqueue_dedents (n-1)))
+
+let rec enqueue_indents n = if n > 0 then (Queue.add INDENT token_queue; (enqueue_indents (n-1)))
+
+let count_tabs str = if String.contains str '\t' then String.length str - String.index str '\t' else 0
 }
 
 (* 
@@ -82,6 +96,17 @@ rule scan_token = parse
 	| ['\n']  { NEWLINE }
 	| eof { EOF }
 	| _ as char { raise (Failure("illegal character " ^ Char.escaped char)) }
+
+  | ('#'[^'\n']*)?(['\n']+['\t']* as newlines_and_tabs) {
+    let num_tabs = (count_tabs newlines_and_tabs) in
+    if (Stack.top tab_count_stack) == num_tabs then
+      NEWLINE
+    else if (Stack.top tab_count_stack) > num_tabs then
+      ((enqueue_dedents ((Stack.pop tab_count_stack) - num_tabs); Stack.push num_tabs tab_count_stack); NEWLINE)
+    else
+      ((enqueue_indents (num_tabs - (Stack.top tab_count_stack)); Stack.push num_tabs tab_count_stack); NEWLINE)
+  }
+
 
 	and read_single_line_comment = parse
 		| newline { next_line lexbuf; scan_token lexbuf }
