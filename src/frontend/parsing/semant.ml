@@ -70,16 +70,19 @@ in
 (* let _ = find_func "main" in *)
 
 
-
+(* Raise an exception if the given rvalue type cannot be assigned to
+       the given lvalue type *)
 let check_assign lvaluet rvaluet err =
   if lvaluet = rvaluet then lvaluet else raise (Failure err)
 in
 
+(* Return a variable from our local symbol table *)
 let type_of_identifier symbol_table s =
   try StringMap.find s symbol_table
   with Not_found -> raise (Failure ("undeclared identifier " ^ s))
 in
 
+(* Return a semantically-checked expression, i.e., with a type *)
 let rec check_expr symbol_table = function
       Literal l -> (Int, SLiteral l)
     | BoolLit l -> (Bool, SBoolLit l)
@@ -160,105 +163,18 @@ and check_top_stmt curr_symbol_table = function
     ignore(updated_function_decls);
     *)
 
-    (* Raise an exception if the given rvalue type cannot be assigned to
-       the given lvalue type *)
-    let check_assign lvaluet rvaluet err =
-      if lvaluet = rvaluet then lvaluet else raise (Failure err)
-    in
-
     (* Build local symbol table of variables for this function *)
     let symbols = List.fold_left (fun m (name, ty) -> StringMap.add name ty m)
         (* StringMap.empty (globals @ func.formals @ func.locals ) *)
         StringMap.empty (func.formals)
     in
+    ignore(symbols);
 
-    (* Return a variable from our local symbol table *)
-    let type_of_identifier s =
-      try StringMap.find s symbols
-      with Not_found -> raise (Failure ("undeclared identifier " ^ s))
-    in
-
-    (* Return a semantically-checked expression, i.e., with a type *)
-    let rec check_expr = function
-        Literal l -> (Int, SLiteral l)
-      | BoolLit l -> (Bool, SBoolLit l)
-      | StringLit l -> (String, SStringLit l)
-      | Id var -> (type_of_identifier var, SId var)
-      | Assign(var, e) as ex ->
-        let lt = type_of_identifier var
-        and (rt, e') = check_expr e in
-        let err = "illegal assignment " ^ string_of_typ lt ^ " = " ^
-                  string_of_typ rt ^ " in " ^ string_of_expr ex
-        in
-        (check_assign lt rt err, SAssign(var, (rt, e')))
-
-      | Binop(e1, op, e2) as e ->
-        let (t1, e1') = check_expr e1
-        and (t2, e2') = check_expr e2 in
-        let err = "illegal binary operator " ^
-                  string_of_typ t1 ^ " " ^ string_of_op op ^ " " ^
-                  string_of_typ t2 ^ " in " ^ string_of_expr e
-        in
-        (* All binary operators require operands of the same type*)
-        if t1 = t2 then
-          (* Determine expression type based on operator and operand types *)
-          let t = match op with
-              Add | Sub when t1 = Int -> Int
-            | Equal | Neq -> Bool
-            | Less when t1 = Int -> Bool
-            | And | Or when t1 = Bool -> Bool
-            | _ -> raise (Failure err)
-          in
-          (t, SBinop((t1, e1'), op, (t2, e2')))
-        else raise (Failure err)
-      | Call(fname, args) as call ->
-        let fd = find_func fname in
-        let param_length = List.length fd.formals in
-        if List.length args != param_length then
-          raise (Failure ("expecting " ^ string_of_int param_length ^
-                          " arguments in " ^ string_of_expr call))
-        else let check_call (_, ft) e =
-               let (et, e') = check_expr e in
-               let err = "illegal argument found " ^ string_of_typ et ^
-                         " expected " ^ string_of_typ ft ^ " in " ^ string_of_expr e
-               in (check_assign ft et err, e')
-          in
-          let args' = List.map2 check_call fd.formals args
-          in (fd.rtyp, SCall(fname, args'))
-    in
-
-    let check_bool_expr e =
-      let (t, e') = check_expr e in
-      match t with
-      | Bool -> (t, e')
-      |  _ -> raise (Failure ("expected Boolean expression in " ^ string_of_expr e))
-    in
-
-    let rec check_stmt_list =function
-        [] -> []
-      | Block sl :: sl'  -> check_stmt_list (sl @ sl') (* Flatten blocks *)
-      | s :: sl -> check_stmt s :: check_stmt_list sl
-    (* Return a semantically-checked statement i.e. containing sexprs *)
-    and check_stmt = function
-      (* A block is correct if each statement is correct and nothing
-         follows any Return statement.  Nested blocks are flattened. *)
-        Block sl -> SBlock (check_stmt_list sl)
-      | Expr e -> SExpr (check_expr e)
-      | If(e, st1, st2) ->
-        SIf(check_bool_expr e, check_stmt st1, check_stmt st2)
-      | While(e, st) ->
-        SWhile(check_bool_expr e, check_stmt st)
-      | Return e ->
-        let (t, e') = check_expr e in
-        if t = func.rtyp then SReturn (t, e')
-        else raise (
-            Failure ("return gives " ^ string_of_typ t ^ " expected " ^
-                     string_of_typ func.rtyp ^ " in " ^ string_of_expr e))
-    in (* body of check_func *)
+     (* body of check_func *)
     { srtyp = func.rtyp;
       sfname = func.fname;
       sformals = func.formals;
-      sbody = check_stmt_list func.body
+      sbody = check_top_stmt_list curr_symbol_table func.body
     }
   in
   let check_code curr_symbol_table = function
