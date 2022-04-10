@@ -131,7 +131,7 @@ let rec check_expr symbol_table = function
         in (fd.rtyp, SCall(fname, args'))
   in
 
-let rec check_top_stmt_list curr_symbol_table  =function
+let rec check_top_stmt_list curr_symbol_table  = function
       [] -> []
     | Block sl :: sl'  -> check_top_stmt_list curr_symbol_table (sl @ sl') (* Flatten blocks *)
     | s :: sl -> check_top_stmt curr_symbol_table s :: check_top_stmt_list curr_symbol_table sl
@@ -162,19 +162,19 @@ and check_top_stmt curr_symbol_table = function
     let updated_function_decls = add_func function_decls func in
     ignore(updated_function_decls);
     *)
+    
 
     (* Build local symbol table of variables for this function *)
-    let symbols = List.fold_left (fun m (name, ty) -> StringMap.add name ty m)
+    let local_symbols = List.fold_left (fun m (name, ty) -> StringMap.add name ty m)
         (* StringMap.empty (globals @ func.formals @ func.locals ) *)
-        StringMap.empty (func.formals)
+        curr_symbol_table (func.formals)
     in
-    ignore(symbols);
 
      (* body of check_func *)
     { srtyp = func.rtyp;
       sfname = func.fname;
       sformals = func.formals;
-      sbody = check_top_stmt_list curr_symbol_table func.body
+      sbody = check_top_stmt_list local_symbols func.body
     }
   in
   let check_code curr_symbol_table = function
