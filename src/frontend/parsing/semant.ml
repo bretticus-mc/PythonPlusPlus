@@ -4,6 +4,8 @@ open Ast
 open Sast
 
 module StringMap = Map.Make(String)
+let var_map = Hashtbl.create 12345
+(* module VarMap = Map.Make(String) *)
 
 (* Semantic checking of the AST. Returns an SAST if successful,
    throws an exception if something is wrong.
@@ -21,10 +23,6 @@ let check (code) =
       | _ :: t -> dups t
     in dups (List.sort (fun (a, _) (b, _) -> compare a b) binds)
   in
-
-  (* Make sure no globals duplicate 
-  check_binds "global" globals;
-  *)
 
   (* Collect function declarations for built-in functions: no bodies *)
   let built_in_decls =
@@ -61,14 +59,11 @@ in
   let function_decls = List.fold_left build_func_table built_in_decls code
   in
 
-  (* Return a function from our symbol table *)
+  (* Return a function from symbol table *)
   let find_func s =
     try StringMap.find s function_decls
     with Not_found -> raise (Failure ("unrecognized function " ^ s))
   in
-(* Ensure "main" is defined *)
-(* let _ = find_func "main" in *)
-
 
 (* Raise an exception if the given rvalue type cannot be assigned to
        the given lvalue type *)
@@ -78,7 +73,7 @@ in
 
 (* Return a variable from our local symbol table *)
 let type_of_identifier symbol_table s =
-  try StringMap.find s symbol_table
+  try Hashtbl.find symbol_table s
   with Not_found -> raise (Failure ("undeclared identifier " ^ s))
 in
 
@@ -93,7 +88,9 @@ let rec check_expr symbol_table = function
       and (rt, e') = check_expr symbol_table e in
       let err = "illegal assignment " ^ string_of_typ lt ^ " = " ^
                 string_of_typ rt ^ " in " ^ string_of_expr ex
-      in
+    in ignore(Hashtbl.add symbol_table var lt );
+    Hashtbl.iter (fun x y -> Printf.printf "%s -> \n" x ) symbol_table;
+
       (check_assign lt rt err, SAssign(var, (rt, e')))
 
     | Binop(e1, op, e2) as e ->
@@ -162,19 +159,26 @@ and check_top_stmt curr_symbol_table = function
     let updated_function_decls = add_func function_decls func in
     ignore(updated_function_decls);
     *)
-    
+    let local_symbol_table = Hashtbl.copy curr_symbol_table in
 
-    (* Build local symbol table of variables for this function *)
-    let local_symbols = List.fold_left (fun m (name, ty) -> StringMap.add name ty m)
+    let rec build_local_symbol_table table formals =
+      match formals with
+      | [] -> table
+      | hd::tl -> Hashtbl.add table (fst hd) (snd hd); build_local_symbol_table table tl
+    in
+    ignore(build_local_symbol_table local_symbol_table func.formals);
+    (* Build local symbol table of variables for this function 
+    let local_symbols = List.fold_left (fun m (name, ty) -> Hashtbl.add name ty m)
         (* StringMap.empty (globals @ func.formals @ func.locals ) *)
         curr_symbol_table (func.formals)
     in
+    *)
 
      (* body of check_func *)
     { srtyp = func.rtyp;
       sfname = func.fname;
       sformals = func.formals;
-      sbody = check_top_stmt_list local_symbols func.body
+      sbody = check_top_stmt_list curr_symbol_table func.body
     }
   in
   let check_code curr_symbol_table = function
@@ -182,4 +186,4 @@ and check_top_stmt curr_symbol_table = function
     | Stmt(s) -> SStmt (check_top_stmt curr_symbol_table s)
   in 
 
-  List.map (check_code StringMap.empty) code
+  List.map (check_code var_map) code
