@@ -2,7 +2,7 @@
    check the resulting AST and generate an SAST from it, generate LLVM IR,
    and dump the module *)
 
-   type action = Ast | Sast | LLVM_IR
+   (* type action = Ast | Sast | LLVM_IR
 
    let () =
      let action = ref LLVM_IR in
@@ -25,5 +25,5 @@
        match !action with
          Ast     -> ()
        | Sast    -> print_string (Sast.string_of_sprogram sast)
-       | LLVM_IR -> print_string (Llvm.string_of_llmodule (Irgen.translate sast))
-   
+       | LLVM_IR -> print_string (Llvm.string_of_llmodule (Irgen.translate sast)) *)
+  
