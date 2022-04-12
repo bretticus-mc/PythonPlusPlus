@@ -1,5 +1,3 @@
-(* Ocamllex scanner for MicroC *)
-
 { open Microcparse }
 
 let digit = ['0'-'9']

@@ -1,0 +1,46 @@
+### Starting build.
+# Target: test2.ml.depends, tags: { extension:ml, file:test2.ml, ocaml, ocamldep, quiet }
+/Users/torlowcorvah/.opam/default/bin/ocamldep.opt -modules test2.ml > test2.ml.depends # cached
+# Target: microcparse.mly, tags: { extension:mly, file:microcparse.mly, infer, ocaml, ocamlyacc, parser, quiet }
+/Users/torlowcorvah/.opam/default/bin/ocamlyacc microcparse.mly
+# Target: microcparse.mli.depends, tags: { extension:mli, file:microcparse.mli, ocaml, ocamldep, quiet }
+/Users/torlowcorvah/.opam/default/bin/ocamldep.opt -modules microcparse.mli > microcparse.mli.depends
+# Target: ast.ml.depends, tags: { extension:ml, file:ast.ml, ocaml, ocamldep, quiet }
+/Users/torlowcorvah/.opam/default/bin/ocamldep.opt -modules ast.ml > ast.ml.depends # cached
+# Target: ast.cmo, tags: { byte, compile, extension:cmo, extension:ml, file:ast.cmo, file:ast.ml, implem, ocaml, quiet }
+/Users/torlowcorvah/.opam/default/bin/ocamlc.opt -c -o ast.cmo ast.ml # cached
+# Target: sast.ml.depends, tags: { extension:ml, file:sast.ml, ocaml, ocamldep, quiet }
+/Users/torlowcorvah/.opam/default/bin/ocamldep.opt -modules sast.ml > sast.ml.depends # cached
+# Target: sast.cmo, tags: { byte, compile, extension:cmo, extension:ml, file:sast.cmo, file:sast.ml, implem, ocaml, quiet }
+/Users/torlowcorvah/.opam/default/bin/ocamlc.opt -c -o sast.cmo sast.ml # cached
+# Target: scanner.mll, tags: { extension:mll, file:scanner.mll, lexer, ocaml, ocamllex, quiet }
+/Users/torlowcorvah/.opam/default/bin/ocamllex.opt -q scanner.mll # cached
+# Target: scanner.ml.depends, tags: { extension:ml, file:scanner.ml, ocaml, ocamldep, quiet }
+/Users/torlowcorvah/.opam/default/bin/ocamldep.opt -modules scanner.ml > scanner.ml.depends # cached
+# Target: microcparse.cmi, tags: { byte, compile, extension:mli, file:microcparse.mli, interf, ocaml, quiet }
+/Users/torlowcorvah/.opam/default/bin/ocamlc.opt -c -o microcparse.cmi microcparse.mli
+# Target: semant.ml.depends, tags: { extension:ml, file:semant.ml, ocaml, ocamldep, quiet }
+/Users/torlowcorvah/.opam/default/bin/ocamldep.opt -modules semant.ml > semant.ml.depends # cached
+# Target: semant.cmo, tags: { byte, compile, extension:cmo, extension:ml, file:semant.cmo, file:semant.ml, implem, ocaml, quiet }
+/Users/torlowcorvah/.opam/default/bin/ocamlc.opt -c -o semant.cmo semant.ml # cached
+# Target: scanner.cmo, tags: { byte, compile, extension:cmo, extension:ml, file:scanner.cmo, file:scanner.ml, implem, ocaml, quiet }
+/Users/torlowcorvah/.opam/default/bin/ocamlc.opt -c -o scanner.cmo scanner.ml
+# Target: test2.cmo, tags: { byte, compile, extension:cmo, extension:ml, file:test2.cmo, file:test2.ml, implem, ocaml, quiet }
+/Users/torlowcorvah/.opam/default/bin/ocamlc.opt -c -o test2.cmo test2.ml
+# Target: microcparse.ml.depends, tags: { extension:ml, file:microcparse.ml, ocaml, ocamldep, quiet }
+/Users/torlowcorvah/.opam/default/bin/ocamldep.opt -modules microcparse.ml > microcparse.ml.depends
+# Target: ast.cmx, tags: { compile, extension:cmx, extension:ml, file:ast.cmx, file:ast.ml, implem, native, ocaml, quiet }
+/Users/torlowcorvah/.opam/default/bin/ocamlopt.opt -c -o ast.cmx ast.ml # cached
+# Target: sast.cmx, tags: { compile, extension:cmx, extension:ml, file:sast.cmx, file:sast.ml, implem, native, ocaml, quiet }
+/Users/torlowcorvah/.opam/default/bin/ocamlopt.opt -c -o sast.cmx sast.ml # cached
+# Target: microcparse.cmx, tags: { compile, extension:cmx, extension:ml, file:microcparse.cmx, file:microcparse.ml, implem, native, ocaml, quiet }
+/Users/torlowcorvah/.opam/default/bin/ocamlopt.opt -c -o microcparse.cmx microcparse.ml
+# Target: semant.cmx, tags: { compile, extension:cmx, extension:ml, file:semant.cmx, file:semant.ml, implem, native, ocaml, quiet }
+/Users/torlowcorvah/.opam/default/bin/ocamlopt.opt -c -o semant.cmx semant.ml # cached
+# Target: scanner.cmx, tags: { compile, extension:cmx, extension:ml, file:scanner.cmx, file:scanner.ml, implem, native, ocaml, quiet }
+/Users/torlowcorvah/.opam/default/bin/ocamlopt.opt -c -o scanner.cmx scanner.ml
+# Target: test2.cmx, tags: { compile, extension:cmx, extension:ml, file:test2.cmx, file:test2.ml, implem, native, ocaml, quiet }
+/Users/torlowcorvah/.opam/default/bin/ocamlopt.opt -c -o test2.cmx test2.ml
+# Target: test2.native, tags: { dont_link_with, extension:native, file:test2.native, link, native, ocaml, program, quiet }
+/Users/torlowcorvah/.opam/default/bin/ocamlopt.opt ast.cmx microcparse.cmx sast.cmx scanner.cmx semant.cmx test2.cmx -o test2.native
+# Compilation successful.
