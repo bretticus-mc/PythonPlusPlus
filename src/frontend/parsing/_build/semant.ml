@@ -165,7 +165,7 @@ and check_top_stmt curr_symbol_table = function
     let updated_function_decls = add_func function_decls func in
     ignore(updated_function_decls);
     *)
-    let local_symbol_table = Hashtbl.copy curr_symbol_table in
+    let local_symbol_table = Hashtbl.copy curr_symbol_table in 
 
     let rec build_local_symbol_table table formals =
       match formals with
@@ -184,7 +184,7 @@ and check_top_stmt curr_symbol_table = function
     { srtyp = func.rtyp;
       sfname = func.fname;
       sformals = func.formals;
-      sbody = check_top_stmt_list curr_symbol_table func.body
+      sbody = check_top_stmt_list local_symbol_table func.body
     }
   in
   let check_code curr_symbol_table = function
