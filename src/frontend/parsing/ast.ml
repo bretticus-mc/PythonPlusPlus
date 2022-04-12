@@ -54,6 +54,13 @@ let string_of_op = function
   | And -> "and"
   | Or -> "or"
 
+let string_of_typ = function
+    Int -> "int"
+  | Bool -> "bool"
+  | Float -> "float"
+  | String -> "String"
+  | None -> "None"
+  
 let rec string_of_expr = function
     Literal(l) -> string_of_int l
   | BoolLit(true) -> "True"
@@ -63,6 +70,7 @@ let rec string_of_expr = function
   | Binop(e1, o, e2) ->
     string_of_expr e1 ^ " " ^ string_of_op o ^ " " ^ string_of_expr e2
   | Assign(v, e) -> v ^ " = " ^ string_of_expr e
+  | VariableInit(v, t, e) -> v ^ " : " ^ string_of_typ t ^ " = " ^ string_of_expr e
   | Call(f, el) ->
       f ^ "(" ^ String.concat ", " (List.map string_of_expr el) ^ ")"
 
@@ -75,12 +83,7 @@ let rec string_of_stmt = function
                       string_of_stmt s1 ^ "else\n" ^ string_of_stmt s2
   | While(e, s) -> "while (" ^ string_of_expr e ^ ") " ^ string_of_stmt s
 
-let string_of_typ = function
-    Int -> "int"
-  | Bool -> "bool"
-  | Float -> "float"
-  | String -> "String"
-  | None -> "None"
+
 
 let string_of_fdecl fdecl =
     "def " ^ fdecl.fname ^ "(" ^ 

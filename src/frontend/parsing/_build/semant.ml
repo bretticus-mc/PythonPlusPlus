@@ -167,7 +167,7 @@ and check_top_stmt curr_symbol_table = function
     *)
     let local_symbol_table = Hashtbl.copy curr_symbol_table in 
 
-    let rec build_local_symbol_table table formals =
+    let rec build_local_symbol_table table formals = 
       match formals with
       | [] -> table
       | hd::tl -> Hashtbl.add table (fst hd) (snd hd); build_local_symbol_table table tl
