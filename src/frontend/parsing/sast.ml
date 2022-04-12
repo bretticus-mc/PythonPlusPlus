@@ -11,6 +11,7 @@ and sx =
   | SBinop of sexpr * op * sexpr
   | SAssign of string * sexpr
   | SStringLit of string
+  | SVariableInit of string * typ * sexpr
   (* call *)
   | SCall of string * sexpr list
 
@@ -47,6 +48,7 @@ let rec string_of_sexpr (t, e) =
       | SBinop(e1, o, e2) ->
         string_of_sexpr e1 ^ " " ^ string_of_op o ^ " " ^ string_of_sexpr e2
       | SAssign(v, e) -> v ^ " = " ^ string_of_sexpr e
+      | SVariableInit(v, t, e) -> v ^ " : " ^ string_of_typ t ^ " = " ^ string_of_sexpr e
       | SCall(f, el) ->
           f ^ "(" ^ String.concat ", " (List.map string_of_sexpr el) ^ ")"
     ) ^ ")"

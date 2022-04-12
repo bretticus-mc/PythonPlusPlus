@@ -1,1 +1,1 @@
-semant.ml: Ast Hashtbl List Map Printf Sast String
+semant.ml: Ast Hashtbl List Map Sast String

@@ -6,6 +6,7 @@ open Sast
 (* Create a Map where its keys are strings *)
 module StringMap = Map.Make(String)
 let var_map = Hashtbl.create 12345
+(* module StringHash = Hashtbl.Make() *)
 (* module VarMap = Map.Make(String) *)
 
 (* Semantic checking of the AST. Returns an SAST if successful,
@@ -86,14 +87,16 @@ let rec check_expr symbol_table = function
     | BoolLit l -> (Bool, SBoolLit l)
     | StringLit l -> (String, SStringLit l)
     | Id var -> (type_of_identifier symbol_table var, SId var)
+    | VariableInit(var, t, e) -> (* var = Variable Name, t = Type, e = Expression *)
+      (* TODO: Check if Variable exists in Hashtable *)
+        ignore(Hashtbl.add symbol_table var t);  (* Add Variable to Hashtable *)
+      (t, SVariableInit(var, t, (check_expr symbol_table e))) (* Check if it is added properly *)
     | Assign(var, e) as ex ->
       let lt = type_of_identifier symbol_table var
       and (rt, e') = check_expr symbol_table e in
       let err = "illegal assignment " ^ string_of_typ lt ^ " = " ^
                 string_of_typ rt ^ " in " ^ string_of_expr ex
-    in ignore(Hashtbl.add symbol_table var lt );
-    Hashtbl.iter (fun x y -> Printf.printf "%s -> \n" x ) symbol_table;
-
+    in
       (check_assign lt rt err, SAssign(var, (rt, e')))
 
     | Binop(e1, op, e2) as e ->
