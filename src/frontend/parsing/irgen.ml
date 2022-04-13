@@ -17,10 +17,11 @@ module A = Ast
 open Sast
 
 module StringMap = Map.Make(String)
-let var_map = Hashtbl.create 12345
+(* let var_map = Hashtbl.create 12345 *)
+
 
 (* translate : Sast.program -> Llvm.module *)
-let translate (code) =
+let translate (code: Sast.scode list) =
   let context    = L.global_context () in
 
   (* Create the LLVM compilation module into which
@@ -61,7 +62,11 @@ let translate (code) =
         Array.of_list (List.map (fun (_,t) -> ltype_of_typ t) fdecl.sformals)
       in let ftype = L.function_type (ltype_of_typ fdecl.srtyp) formal_types in
       StringMap.add name (L.define_function name ftype the_module, fdecl) m in
-    List.fold_left function_decl StringMap.empty code in (* need intermediary function differentiate between funcs and stmts*)
+    let func_decl_intermediary map = function
+    | SFunc_def(func_decl) -> function_decl map func_decl
+    | SStmt(stmt) -> map
+    in
+    List.fold_left func_decl_intermediary StringMap.empty code in 
 
   (* let int_format_str = L.build_global_stringptr "%d\n" "fmt" builder in *)
 
@@ -175,12 +180,12 @@ let translate (code) =
       in
       List.fold_left2 add_formal StringMap.empty fdecl.sformals
           (Array.to_list (L.params the_function))
+    in  
     (* 
       let formals = List.fold_left2 add_formal StringMap.empty fdecl.sformals
           (Array.to_list (L.params the_function)) in
-      List.fold_left add_local formals fdecl.slocals
+      List.fold_left add_local formals fdecl.slocals in
     *)
-    in
 
     (* LLVM insists each basic block end with exactly one "terminator"
        instruction that transfers control.  This function runs "instr builder"
@@ -196,20 +201,23 @@ let translate (code) =
     let func_builder = build_stmt the_function curr_symbol_table builder (SBlock fdecl.sbody) in
 
     (* Add a return if the last block falls off the end *)
-    add_terminal func_builder (L.build_ret (L.const_int i32_t 0))
-
+    add_terminal func_builder (L.build_ret (L.const_int i32_t 0)); 
+    builder 
   in
 
-  (* LLVM requires a 'main' function as an entry point *)
+  (* LLVM requires a 'main' function as an entry point. Borrowed from Boomslang *)
   let main_t : L.lltype =
     L.var_arg_function_type i32_t [| |] in
   let main_func : L.llvalue =
     L.define_function "main" main_t the_module in
   let main_builder = L.builder_at_end context (L.entry_block main_func) in
-  
-  let translate_code curr_symbol_table = function
-    SFunc_def(func) -> build_function_body curr_symbol_table func
-    | SStmt(stmt) -> build_stmt main_func curr_symbol_table main_builder stmt
+
+  let translate_code curr_symbol_table builder program = match program with
+    SStmt(stmt) -> build_stmt main_func curr_symbol_table builder stmt
+    | SFunc_def(func) -> build_function_body curr_symbol_table func
   in
-  List.map (translate_code var_map) functions;
+  let build_code = List.fold_left (translate_code StringMap.empty) main_builder code
+  in
+  ignore(L.build_ret (L.const_int i32_t 0) build_code);
+  (* List.map (translate_code var_map) code; *)
   the_module
