@@ -31,12 +31,15 @@ let translate (code: Sast.scode list) =
   (* Get types from the context *)
   let i32_t      = L.i32_type    context
   and i8_t       = L.i8_type     context
-  and i1_t       = L.i1_type     context in
+  and i1_t       = L.i1_type     context 
+  and none_t     = L.void_type   context
+in
 
   (* Return the LLVM type for a PythonPP type *)
   let ltype_of_typ = function
       A.Int   -> i32_t
     | A.Bool  -> i1_t
+    | A.None  -> none_t
   in
 
   (* Create a map of global variables after creating each 
@@ -68,8 +71,6 @@ let translate (code: Sast.scode list) =
     in
     List.fold_left func_decl_intermediary StringMap.empty code in 
 
-  (* let int_format_str = L.build_global_stringptr "%d\n" "fmt" builder in *)
-
   (* Return the value for a variable or formal argument.
       Check local names first, then global names *)
   let lookup symbol_table n = try StringMap.find n symbol_table
@@ -80,6 +81,7 @@ let translate (code: Sast.scode list) =
   (* Construct code for an expression; return its value *)
   let rec build_expr curr_symbol_table builder ((_, e) : sexpr) = match e with
     SLiteral i  -> L.const_int i32_t i
+(*  | SStringLit s -> *)
     | SBoolLit b  -> L.const_int i1_t (if b then 1 else 0)
     | SId s       -> L.build_load (lookup curr_symbol_table s) s builder
     | SAssign (s, e) -> let e' = build_expr curr_symbol_table builder e in
@@ -97,8 +99,9 @@ let translate (code: Sast.scode list) =
       | A.Less    -> L.build_icmp L.Icmp.Slt
       ) e1' e2' "tmp" builder
     | SCall ("print", [e]) ->
-      L.build_call printf_func [|(build_expr curr_symbol_table builder e);|]
-      (* L.build_call printf_func [| int_format_str ; (build_expr curr_symbol_table builder e) |] *)
+      let int_format_str = L.build_global_stringptr "%d\n" "fmt" builder in
+     (* L.build_call printf_func [|(build_expr curr_symbol_table builder e);|] *)
+      L.build_call printf_func [| int_format_str ; (build_expr curr_symbol_table builder e) |]
         "printf" builder
     | SCall (f, args) ->
       let (fdef, fdecl) = StringMap.find f function_decls in
