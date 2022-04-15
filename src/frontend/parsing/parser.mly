@@ -2,7 +2,7 @@
 open Ast
 %}
 
-%token SEMI LPAREN RPAREN LBRACE RBRACE PLUS MINUS ASSIGN MULT DIV
+%token SEMI LPAREN RPAREN LBRACE RBRACE PLUS MINUS MULT DIV
 %token EQ LT GT AND OR NOT DOT PLUS_EQ MINUS_EQ MULT_EQ DIV_EQ
 %token IF ELSE WHILE INT STRING BOOL REM RANGLE ARROW
 %token EXCLAMATION EQEQ_COMPARISON NOT_EQ TRUE FALSE NONE COLON
@@ -84,9 +84,8 @@ stmt:
     expr NEWLINE                            { Expr $1 }
   | expr EOF                                { Expr $1 }
   | LBRACE stmt_list RBRACE                 { Block $2 }
-  /* if (condition) { block1} else {block2} */
-  /* if (condition) stmt else stmt */
-  | IF LPAREN expr RPAREN stmt ELSE stmt    { If($3, $5, $7) }
+  /* if (condition): /n stmt else /n stmt */
+  | IF LPAREN expr RPAREN COLON NEWLINE stmt ELSE COLON NEWLINE stmt    { If($3, $7, $11) }
   | WHILE LPAREN expr RPAREN COLON NEWLINE stmt { While ($3, $7)  }
   /* return */
   | RETURN expr NEWLINE                       { Return $2   }
