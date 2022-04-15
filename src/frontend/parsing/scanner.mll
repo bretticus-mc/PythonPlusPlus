@@ -53,7 +53,7 @@ rule scan_token = parse
 	| "-=" { MINUS_EQ }
 	| "*=" { MULT_EQ }
 	| "/=" { DIV_EQ }
-	| "%" { REM }
+	| "%" { MOD }
 	| "<" { LT }
 	| ">" { GT }
 	| "->" { ARROW }
