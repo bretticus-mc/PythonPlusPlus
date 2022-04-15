@@ -88,6 +88,7 @@ in
 (* Return a semantically-checked expression, i.e., with a type *)
 let rec check_expr symbol_table = function
       Literal l -> (Int, SLiteral l)
+    | FloatLit l -> (Float, SFloatLit l)
     | BoolLit l -> (Bool, SBoolLit l)
     | StringLit l -> (String, SStringLit l)
     | Id var -> (type_of_identifier symbol_table var, SId var)

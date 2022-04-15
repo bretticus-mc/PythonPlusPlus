@@ -2,14 +2,21 @@
 open Ast
 %}
 
-%token SEMI LPAREN RPAREN LBRACE RBRACE PLUS MINUS ASSIGN MULT DIV
-%token EQ NEQ LT GT AND OR NOT DOT PLUS_EQ MINUS_EQ MULT_EQ DIV_EQ
-%token IF ELSE WHILE INT STRING BOOL REM RANGLE ARROW
-%token EXCLAMATION EQEQUAL NOTEQUAL TRUE FALSE NONE COLON
-%token DEF FOR IN NEWLINE
-/* return, COMMA token */
-%token RETURN COMMA
-%token <float> FLOAT
+/* Types */
+%token INT FLOAT BOOL STRING
+
+/* Operators */
+%token ASSIGN PLUS MINUS MULT DIV 
+
+/* Comparators */
+%token EQ NEQ LT GT AND OR NOT DOT PLUS_EQ MINUS_EQ MULT_EQ DIV_EQ EXCLAMATION EQEQUAL NOTEQUAL IN COLON
+
+%token IF ELSE WHILE FOR DEF RETURN COMMA NEWLINE
+%token SEMI LPAREN RPAREN LBRACE RBRACE
+%token TRUE FALSE NONE
+%token REM RANGLE ARROW
+
+%token <string> FLOAT_LITERAL
 %token <int> INT_LITERAL
 %token <bool> BLIT
 %token <string> ID
@@ -95,6 +102,7 @@ stmt:
 
 expr:
     INT_LITERAL      { Literal($1)            }
+  | FLOAT_LITERAL    { FloatLit($1)           }
   | BLIT             { BoolLit($1)            }
   | STRING_LITERAL   { StringLit($1) } 
   | ID               { Id($1)                 }

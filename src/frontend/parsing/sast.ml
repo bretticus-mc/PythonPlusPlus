@@ -42,6 +42,7 @@ type sprogram = scode list
 let rec string_of_sexpr (t, e) =
   "(" ^ string_of_typ t ^ " : " ^ (match e with
         SLiteral(l) -> string_of_int l
+      | SFloatLit(l) -> l
       | SStringLit(l) -> l
       | SBoolLit(true) -> "True"
       | SBoolLit(false) -> "False"

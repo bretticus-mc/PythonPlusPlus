@@ -5,7 +5,7 @@ type typ = Int | Bool | Float | String | None
 (* Defining what expressions can be *)
 type expr =
     Literal of int
-  | FloatLit of string
+  | FloatLit of string (* TR: Changed from float *)
   | BoolLit of bool
   | StringLit of string
   | Id of string
@@ -68,6 +68,7 @@ let string_of_typ = function
   
 let rec string_of_expr = function
     Literal(l) -> string_of_int l
+  | FloatLit(l) -> l
   | BoolLit(true) -> "True"
   | BoolLit(false) -> "False"
   | StringLit(s) -> s
