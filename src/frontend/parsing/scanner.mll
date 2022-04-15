@@ -65,6 +65,7 @@ rule scan_token = parse
 	| "!=" { NOTEQ }
 	| "True" { BLIT(true)  }
 	| "False" { BLIT(false) }
+	| "return" { RETURN }
 	| "def" { DEF }
 	| "if" { IF }
 	| "else" { ELSE }
