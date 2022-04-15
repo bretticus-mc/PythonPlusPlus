@@ -1,16 +1,17 @@
-type op = Add | Sub | Mult | Div | Mod | Equal | Neq | Less | Greater | And | Or
+type op = Add | Sub | Mult | Div | Equal | Neq | Less | Greater | And | Or
 
 type typ = Int | Bool | Float | String | None
 
 (* Defining what expressions can be *)
 type expr =
     Literal of int
+  | FloatLit of string
   | BoolLit of bool
   | StringLit of string
   | Id of string
   | Binop of expr * op * expr
   | Assign of string * expr
-  (* | VariableInit of string * typ * expr *)
+  | VariableInit of string * typ * expr
   (* function call *)
   | Call of string * expr list (* Function Name and Function Arguments  *)
   
@@ -21,7 +22,7 @@ type stmt =
   | Expr of expr
   | If of expr * stmt * stmt
   | While of expr * stmt
-  | For of expr * expr * expr * stmt
+  (* | For of expr * expr * expr * stmt *)
   (* return *)
   | Return of expr
 
@@ -51,7 +52,6 @@ let string_of_op = function
   | Sub -> "-"
   | Div -> "/"
   | Mult -> "*"
-  | Mod -> "%"
   | Equal -> "=="
   | Neq -> "!="
   | Less -> "<"

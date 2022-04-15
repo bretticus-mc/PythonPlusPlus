@@ -5,7 +5,7 @@ open Sast
 
 (* Create a Map where its keys are strings *)
 module StringMap = Map.Make(String)
-(* let var_map = Hashtbl.create 12345 *)
+let var_map = Hashtbl.create 12345
 
 
 (* Semantic checking of the AST. Returns an SAST if successful,
@@ -28,14 +28,21 @@ let check (code) =
 
   (* Collect function declarations for built-in functions: no bodies *)
   let built_in_decls =
-    (* Add the key: "print" and value: Function Definition *)
-    StringMap.add "print" {
-      (* rtyp = Int; *)
-      rtyp = String;
+    (* StringMap.add "print" {
+      rtyp = Int;
       fname = "print";
-      (* formals = [(Int, "x")]; *)
-      formals = [("x", String)];
-      body = [] } StringMap.empty (* Add this key/value pair to an empty map*)
+      formals = [("x", Int)];
+      body = [] } StringMap.empty  *)
+    let add_bind map (name, ty) = StringMap.add name {
+      rtyp = ty;
+      fname = name;
+      formals = [("x", ty)];
+      body = [] } map
+    in List.fold_left add_bind StringMap.empty [("print", Int);
+                               ("printb", Bool);
+                               ("printf", Float);
+                               ("prints", String);] 
+    (* Add the key: "print" and value: Function Definition *)
   in
 
   (* Add function name to symbol table *)
@@ -50,6 +57,7 @@ let check (code) =
     | _ ->  StringMap.add n fd map
   in
 
+  (* Build symbol table *)
   let build_func_table map = function
     Func_def(f) -> add_func map f
     | _ -> map
@@ -66,7 +74,7 @@ let check (code) =
   in
 
 (* Raise an exception if the given rvalue type cannot be assigned to
-       the given lvalue type *)
+   the given lvalue type *)
 let check_assign lvaluet rvaluet err =
   if lvaluet = rvaluet then lvaluet else raise (Failure err)
 in
@@ -93,7 +101,6 @@ let rec check_expr symbol_table = function
                 string_of_typ rt ^ " in " ^ string_of_expr ex
     in
       (check_assign lt rt err, SAssign(var, (rt, e')))
-
     | Binop(e1, op, e2) as e ->
       let (t1, e1') = check_expr symbol_table e1
       and (t2, e2') = check_expr symbol_table e2 in
@@ -105,8 +112,8 @@ let rec check_expr symbol_table = function
       if t1 = t2 then
         (* Determine expression type based on operator and operand types *)
         let t = match op with
-            Add | Sub when t1 = Int -> Int
-          | Div when t1 = Int -> Int
+            Add | Sub | Div | Mult when t1 = Int -> Int
+          | Add | Sub | Div | Mult when t1 = Float -> Float
           | Equal | Neq -> Bool
           | Less when t1 = Int -> Bool
           | And | Or when t1 = Bool -> Bool
@@ -130,15 +137,15 @@ let rec check_expr symbol_table = function
         in (fd.rtyp, SCall(fname, args'))
   in
 
-let rec check_top_stmt_list curr_symbol_table  = function
+let rec check_stmt_list curr_symbol_table  = function
       [] -> []
-    | Block sl :: sl'  -> check_top_stmt_list curr_symbol_table (sl @ sl') (* Flatten blocks *)
-    | s :: sl -> check_top_stmt curr_symbol_table s :: check_top_stmt_list curr_symbol_table sl
+    | Block sl :: sl'  -> check_stmt_list curr_symbol_table (sl @ sl') (* Flatten blocks *)
+    | s :: sl -> check_top_stmt curr_symbol_table s :: check_stmt_list curr_symbol_table sl
   (* Return a semantically-checked statement i.e. containing sexprs *)
 and check_top_stmt curr_symbol_table = function
     (* A block is correct if each statement is correct and nothing
         follows any Return statement.  Nested blocks are flattened. *)
-      Block sl -> SBlock (check_top_stmt_list curr_symbol_table sl)
+      Block sl -> SBlock (check_stmt_list curr_symbol_table sl)
     | Expr e -> SExpr (check_expr curr_symbol_table e)
     | If(e, st1, st2) ->
       SIf(check_bool_expr curr_symbol_table e, check_top_stmt curr_symbol_table st1, check_top_stmt curr_symbol_table st2)
@@ -178,7 +185,7 @@ and check_top_stmt curr_symbol_table = function
     { srtyp = func.rtyp;
       sfname = func.fname;
       sformals = func.formals;
-      sbody = check_top_stmt_list local_symbol_table func.body
+      sbody = check_stmt_list local_symbol_table func.body
     }
   in
   let check_code curr_symbol_table = function
