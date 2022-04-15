@@ -3,9 +3,9 @@ open Ast
 %}
 
 %token SEMI LPAREN RPAREN LBRACE RBRACE PLUS MINUS ASSIGN MULT DIV
-%token EQ NEQ LT GT AND OR NOT DOT PLUS_EQ MINUS_EQ MULT_EQ DIV_EQ
+%token EQ LT GT AND OR NOT DOT PLUS_EQ MINUS_EQ MULT_EQ DIV_EQ
 %token IF ELSE WHILE INT STRING BOOL REM RANGLE ARROW
-%token EXCLAMATION EQEQUAL NOTEQUAL TRUE FALSE NONE COLON
+%token EXCLAMATION EQEQUAL NOTEQ TRUE FALSE NONE COLON
 %token DEF FOR IN NEWLINE
 /* return, COMMA token */
 %token RETURN COMMA
@@ -22,7 +22,7 @@ open Ast
 %right ASSIGN
 %left OR
 %left AND
-%left EQ NEQ
+%left EQ NOTEQ
 %left LT GT
 %left PLUS MINUS
 
@@ -89,7 +89,7 @@ stmt:
   | IF LPAREN expr RPAREN stmt ELSE stmt    { If($3, $5, $7) }
   | WHILE LPAREN expr RPAREN stmt           { While ($3, $5)  }
   /* return */
-  | RETURN expr NEWLINE                        { Return $2      }
+  | RETURN expr SEMI NEWLINE                       { Return $2      }
   | RETURN expr EOF                        { Return $2      } /* Return the Expression */
 
 
@@ -101,7 +101,7 @@ expr:
   | expr PLUS   expr { Binop($1, Add,   $3)   }
   | expr MINUS  expr { Binop($1, Sub,   $3)   }
   | expr EQ     expr { Binop($1, Equal, $3)   }
-  | expr NEQ    expr { Binop($1, Neq, $3)     }
+  | expr NOTEQ  expr { Binop($1, Neq, $3)     }
   | expr LT     expr { Binop($1, Less,  $3)   }
   | expr GT     expr { Binop($1, Greater,  $3)   }
   | expr AND    expr { Binop($1, And,   $3)   }

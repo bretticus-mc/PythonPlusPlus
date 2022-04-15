@@ -62,7 +62,7 @@ rule scan_token = parse
 	| "not" { NOT }
 	| "!" { EXCLAMATION }
 	| "==" { EQEQUAL }
-	| "!=" { NOTEQUAL }
+	| "!=" { NOTEQ }
 	| "True" { BLIT(true)  }
 	| "False" { BLIT(false) }
 	| "def" { DEF }
