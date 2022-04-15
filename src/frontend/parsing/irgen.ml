@@ -17,7 +17,7 @@ module A = Ast
 open Sast
 
 module StringMap = Map.Make(String)
-(* let var_map = Hashtbl.create 12345 *)
+let var_map = Hashtbl.create 12345
 
 
 (* translate : Sast.program -> Llvm.module *)
@@ -48,7 +48,6 @@ in
       let init = L.const_int (ltype_of_typ t) 0
       in StringMap.add n (L.define_global n init the_module) m in
     List.fold_left global_var StringMap.empty globals in
-
   *)
 
   let printf_t : L.lltype =
@@ -66,14 +65,14 @@ in
       in let ftype = L.function_type (ltype_of_typ fdecl.srtyp) formal_types in
       StringMap.add name (L.define_function name ftype the_module, fdecl) m in
     let func_decl_intermediary map = function
-    | SFunc_def(func_decl) -> function_decl map func_decl
-    | SStmt(stmt) -> map
-    in
-    List.fold_left func_decl_intermediary StringMap.empty code in 
+      | SFunc_def(func_decl) -> function_decl map func_decl
+      | SStmt(stmt) -> map
+      in
+    List.fold_left func_decl_intermediary StringMap.empty code in
 
   (* Return the value for a variable or formal argument.
       Check local names first, then global names *)
-  let lookup symbol_table n = try StringMap.find n symbol_table
+  let lookup symbol_table var_name = try Hashtbl.find symbol_table var_name
     (* with Not_found -> StringMap.find n global_vars *)
     with Not_found -> raise (Failure ("can't find variable"))
   in
@@ -164,26 +163,26 @@ in
     let (the_function, _) = StringMap.find fdecl.sfname function_decls in
     let func_builder = L.builder_at_end context (L.entry_block the_function) in
 
+    (* Create a copy of the running symbol table to create a local 
+    symbol table inside the function scope *)
+    let local_symbol_table_init = Hashtbl.copy curr_symbol_table in 
 
     (* Construct the function's "locals": formal arguments and locally
        declared variables.  Allocate each on the stack, initialize their
        value, if appropriate, and remember their values in the "locals" map *)
-    let local_vars =
-      let add_formal m (var_name, var_typ) p =
+    let add_formals_to_local_symbol_table =
+      let add_formal map (var_name, var_typ) p =
         L.set_value_name var_name p;
-        let local = L.build_alloca (ltype_of_typ var_typ) var_name builder in
+        let local = L.build_alloca (ltype_of_typ var_typ) var_name func_builder in
         ignore (L.build_store p local func_builder);
-        StringMap.add var_name local m
-
-      (* Allocate space for any locally declared variables and add the
-       * resulting registers to our map *)
-      and add_local m (n, t) =
-        let local_var = L.build_alloca (ltype_of_typ t) n func_builder
-        in StringMap.add n local_var m
+        ignore(Hashtbl.add map var_name local);
+        map
       in
-      List.fold_left2 add_formal StringMap.empty fdecl.sformals
+      List.fold_left2 add_formal local_symbol_table_init fdecl.sformals
           (Array.to_list (L.params the_function))
-    in  
+    in
+    let local_symbol_table = add_formals_to_local_symbol_table
+  in
     (* 
       let formals = List.fold_left2 add_formal StringMap.empty fdecl.sformals
           (Array.to_list (L.params the_function)) in
@@ -201,14 +200,14 @@ in
 
     
     (* Build the code for each statement in the function *)
-    let complete_func_builder = build_stmt the_function curr_symbol_table func_builder (SBlock fdecl.sbody) in
+    let complete_func_builder = build_stmt the_function local_symbol_table func_builder (SBlock fdecl.sbody) in
 
     (* Add a return if the last block falls off the end *)
     add_terminal complete_func_builder (L.build_ret (L.const_int i32_t 0)); 
     builder
   in
 
-  (* Psuedo "main" for top-level statements. Borrowed from Boomslang *)
+  (* Psuedo "main" to encapsulate top-level statements. Borrowed from Boomslang *)
   let main_t : L.lltype =
     L.var_arg_function_type i32_t [| |] in
   let main_func : L.llvalue =
@@ -219,7 +218,7 @@ in
     SStmt(stmt) -> build_stmt main_func curr_symbol_table builder stmt
     | SFunc_def(func) -> build_function_body curr_symbol_table builder func
   in
-  let build_code = List.fold_left (translate_code StringMap.empty) main_builder code
+  let build_code = List.fold_left (translate_code var_map) main_builder code
   in
   ignore(L.build_ret (L.const_int i32_t 0) build_code);
   (* List.map (translate_code var_map) code; *)
