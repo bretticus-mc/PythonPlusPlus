@@ -31,11 +31,11 @@ let check (code) =
   let built_in_decls =
     (* Add the key: "print" and value: Function Definition *)
     StringMap.add "print" {
-      rtyp = Int;
-      (* rtyp = String; *)
+      (* rtyp = Int; *)
+      rtyp = String;
       fname = "print";
-      formals = [("x", Int)];
-      (* formals = [("x", String)]; *)
+      (* formals = [(Int, "x")]; *)
+      formals = [("x", String)];
       body = [] } StringMap.empty (* Add this key/value pair to an empty map*)
   in
 
