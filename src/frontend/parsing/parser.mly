@@ -26,13 +26,6 @@ open Ast
 %start program
 %type <Ast.program> program
 
-%right ASSIGN
-%left OR
-%left AND
-%left EQ NEQ
-%left LT GT
-%left PLUS MINUS
-
 %%
 
 /* add function declarations*/
