@@ -1,4 +1,4 @@
-type op = Add | Sub | Div | Mod | Equal | Neq | Less | Greater | And | Or
+type op = Add | Sub | Mult | Div | Mod | Equal | Neq | Less | Greater | And | Or
 
 type typ = Int | Bool | Float | String | None
 
@@ -45,10 +45,12 @@ type program =
     code list (* global variables and then list of function declarations *) 
 
 (* Pretty-printing functions *)
+
 let string_of_op = function
     Add -> "+"
   | Sub -> "-"
   | Div -> "/"
+  | Mult -> "*"
   | Mod -> "%"
   | Equal -> "=="
   | Neq -> "!="

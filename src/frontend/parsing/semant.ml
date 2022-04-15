@@ -5,19 +5,18 @@ open Sast
 
 (* Create a Map where its keys are strings *)
 module StringMap = Map.Make(String)
-let var_map = Hashtbl.create 12345
-(* module StringHash = Hashtbl.Make() *)
-(* module VarMap = Map.Make(String) *)
+(* let var_map = Hashtbl.create 12345 *)
+
 
 (* Semantic checking of the AST. Returns an SAST if successful,
    throws an exception if something is wrong.
 
-   Check each global variable, then check each function *)
+   Check each global variable, then check each function declaration *)
 
+(* code = func_def and stmnt list *)
 let check (code) =
 
   (* Verify a list of declarations(E.g: x: int) has no duplicate names *)
-  (* Input: String, List *)
   let check_binds (kind : string) (binds : (string * typ) list) =
     let rec dups = function
         [] -> ()
@@ -39,10 +38,7 @@ let check (code) =
       body = [] } StringMap.empty (* Add this key/value pair to an empty map*)
   in
 
-  (* TODO: Create new function that creates new hashtable for user declared functions *)
-
   (* Add function name to symbol table *)
-  (* Input: *)
   let add_func map fd =
     let built_in_err = "function " ^ fd.fname ^ " may not be defined"
     and dup_err = "duplicate function " ^ fd.fname
@@ -59,10 +55,7 @@ let check (code) =
     | _ -> map
   in
 
-    (* Collect all function names into one symbol table 
-  let function_decls = List.fold_left add_func built_in_decls functions
-  in
-  *)
+  (* Collect all function declarations into symbol table *)
   let function_decls = List.fold_left build_func_table built_in_decls code
   in
 
@@ -85,14 +78,12 @@ let type_of_identifier symbol_table s =
 in
 
 (* Return a semantically-checked expression, i.e., with a type *)
-(**)
 let rec check_expr symbol_table = function
       Literal l -> (Int, SLiteral l)
     | BoolLit l -> (Bool, SBoolLit l)
     | StringLit l -> (String, SStringLit l)
     | Id var -> (type_of_identifier symbol_table var, SId var)
-    | VariableInit(var, t, e) -> (* var = Variable Name, t = Type, e = Expression *)
-      (* TODO: Check if Variable exists in Hashtable *)
+    | VariableInit(var, t, e) -> (* var = Variable Name, t = Type, e = Expression *) 
         ignore(Hashtbl.add symbol_table var t);  (* Add Variable to Hashtable *)
       (t, SVariableInit(var, t, (check_expr symbol_table e))) (* Check if it is added properly *)
     | Assign(var, e) as ex ->
@@ -115,6 +106,7 @@ let rec check_expr symbol_table = function
         (* Determine expression type based on operator and operand types *)
         let t = match op with
             Add | Sub when t1 = Int -> Int
+          | Div when t1 = Int -> Int
           | Equal | Neq -> Bool
           | Less when t1 = Int -> Bool
           | And | Or when t1 = Bool -> Bool
@@ -165,12 +157,9 @@ and check_top_stmt curr_symbol_table = function
   let check_func curr_symbol_table func =
     (* Make sure no duplicate formal arguments in function declaration *)
     check_binds "formal" func.formals;
-    (* 
-    let updated_function_decls = add_func function_decls func in
-    ignore(updated_function_decls);
-    *)
+
+    (* Build local symbol table to check that there are no duplicate formals *)
     let local_symbol_table = Hashtbl.copy curr_symbol_table in 
-    (* Hashtbl.add() *)
     let rec build_local_symbol_table table formals = 
       match formals with
       | [] -> table
