@@ -45,10 +45,10 @@ let rec string_of_sexpr (t, e) =
       | SBoolLit(true) -> "True"
       | SBoolLit(false) -> "False"
       | SId(s) -> s
-      | SBinop(e1, o, e2) ->
+      | SBinop(e1, o, e2) -> "Binop: " ^
         string_of_sexpr e1 ^ " " ^ string_of_op o ^ " " ^ string_of_sexpr e2
-      | SAssign(v, e) -> v ^ " = " ^ string_of_sexpr e
-      | SVariableInit(v, t, e) -> v ^ " : " ^ string_of_typ t ^ " = " ^ string_of_sexpr e
+      | SAssign(v, e) -> "Assign: " ^ v ^ " = " ^ string_of_sexpr e
+      | SVariableInit(v, t, e) -> "Variable Init: " ^ v ^ " : " ^ string_of_typ t ^ " = " ^ string_of_sexpr e
       | SCall(f, el) ->
           f ^ "(" ^ String.concat ", " (List.map string_of_sexpr el) ^ ")"
     ) ^ ")"

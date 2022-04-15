@@ -61,8 +61,8 @@ rule scan_token = parse
 	| "or" { OR }
 	| "not" { NOT }
 	| "!" { EXCLAMATION }
-	| "==" { EQEQUAL }
-	| "!=" { NOTEQ }
+	| "==" { EQEQ_COMPARISON }
+	| "!=" { NOT_EQ }
 	| "True" { BLIT(true)  }
 	| "False" { BLIT(false) }
 	| "return" { RETURN }

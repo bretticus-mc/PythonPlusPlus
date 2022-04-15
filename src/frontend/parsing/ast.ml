@@ -47,7 +47,7 @@ type program =
 let string_of_op = function
     Add -> "+"
   | Sub -> "-"
-  | Equal -> "=="
+  | Equal -> "="
   | Neq -> "!="
   | Less -> "<"
   | Greater -> ">"

@@ -5,7 +5,7 @@ open Ast
 %token SEMI LPAREN RPAREN LBRACE RBRACE PLUS MINUS ASSIGN MULT DIV
 %token EQ LT GT AND OR NOT DOT PLUS_EQ MINUS_EQ MULT_EQ DIV_EQ
 %token IF ELSE WHILE INT STRING BOOL REM RANGLE ARROW
-%token EXCLAMATION EQEQUAL NOTEQ TRUE FALSE NONE COLON
+%token EXCLAMATION EQEQ_COMPARISON NOT_EQ TRUE FALSE NONE COLON
 %token DEF FOR IN NEWLINE
 /* return, COMMA token */
 %token RETURN COMMA
@@ -19,10 +19,10 @@ open Ast
 %start program
 %type <Ast.program> program
 
-%right ASSIGN
+%right EQ
 %left OR
 %left AND
-%left EQ NOTEQ
+%left EQEQ_COMPARISON NOT_EQ
 %left LT GT
 %left PLUS MINUS
 
@@ -87,26 +87,26 @@ stmt:
   /* if (condition) { block1} else {block2} */
   /* if (condition) stmt else stmt */
   | IF LPAREN expr RPAREN stmt ELSE stmt    { If($3, $5, $7) }
-  | WHILE LPAREN expr RPAREN stmt           { While ($3, $5)  }
+  | WHILE LPAREN expr RPAREN COLON NEWLINE stmt { While ($3, $7)  }
   /* return */
-  | RETURN expr SEMI NEWLINE                       { Return $2      }
+  | RETURN expr NEWLINE                       { Return $2   }
   | RETURN expr EOF                        { Return $2      } /* Return the Expression */
 
 
 expr:
-    INT_LITERAL      { Literal($1)            }
-  | BLIT             { BoolLit($1)            }
-  | STRING_LITERAL   { StringLit($1) } 
-  | ID               { Id($1)                 }
-  | expr PLUS   expr { Binop($1, Add,   $3)   }
-  | expr MINUS  expr { Binop($1, Sub,   $3)   }
-  | expr EQ     expr { Binop($1, Equal, $3)   }
-  | expr NOTEQ  expr { Binop($1, Neq, $3)     }
-  | expr LT     expr { Binop($1, Less,  $3)   }
-  | expr GT     expr { Binop($1, Greater,  $3)   }
-  | expr AND    expr { Binop($1, And,   $3)   }
+  INT_LITERAL                 { Literal($1)            }
+  | BLIT                      { BoolLit($1)            }
+  | STRING_LITERAL            { StringLit($1) } 
+  | ID                        { Id($1)                 }
+  | expr PLUS   expr          { Binop($1, Add,   $3)   }
+  | expr MINUS  expr          { Binop($1, Sub,   $3)   }
+  | expr EQEQ_COMPARISON expr { Binop($1, Equal, $3)   } 
+  | expr NOT_EQ  expr          { Binop($1, Neq, $3)     }
+  | expr LT expr              { Binop($1, Less,  $3)   }
+  | expr GT expr              { Binop($1, Greater,  $3)   }
+  | expr AND    expr          { Binop($1, And,   $3)   }
   | expr OR     expr { Binop($1, Or,    $3)   }
-  | ID ASSIGN expr   { Assign($1, $3)         }
+  | ID EQ expr   { Assign($1, $3)         }
   | LPAREN expr RPAREN { $2                   }
   | ID COLON typ EQ expr { VariableInit($1, $3, $5) } /* Variable Declaration */
   /* call */
