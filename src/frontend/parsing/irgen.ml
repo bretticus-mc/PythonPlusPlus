@@ -85,6 +85,11 @@ in
     | SId s       -> L.build_load (lookup curr_symbol_table s) s builder
     | SAssign (s, e) -> let e' = build_expr curr_symbol_table builder e in
       ignore(L.build_store e' (lookup curr_symbol_table s) builder); e'
+    | SVariableInit(var_name, var_typ, s_expr) -> let s_expr' = build_expr curr_symbol_table builder s_expr in
+      let var_allocation = L.build_alloca (ltype_of_typ var_typ) var_name builder
+      in
+      ignore(Hashtbl.add curr_symbol_table var_name var_allocation);
+      ignore(L.build_store s_expr' var_allocation builder); s_expr' (* TODO: Should s_expr' be return value? *)
     | SBinop (e1, op, e2) ->
       let e1' = build_expr curr_symbol_table builder e1
       and e2' = build_expr curr_symbol_table builder e2 in
@@ -183,11 +188,6 @@ in
     in
     let local_symbol_table = add_formals_to_local_symbol_table
   in
-    (* 
-      let formals = List.fold_left2 add_formal StringMap.empty fdecl.sformals
-          (Array.to_list (L.params the_function)) in
-      List.fold_left add_local formals fdecl.slocals in
-    *)
 
     (* LLVM insists each basic block end with exactly one "terminator"
        instruction that transfers control.  This function runs "instr builder"
@@ -210,12 +210,13 @@ in
   (* Psuedo "main" to encapsulate top-level statements. Borrowed from Boomslang *)
   let main_t : L.lltype =
     L.var_arg_function_type i32_t [| |] in
-  let main_func : L.llvalue =
+  let main_func_llvalue : L.llvalue =
     L.define_function "main" main_t the_module in
-  let main_builder = L.builder_at_end context (L.entry_block main_func) in
+  let main_builder = L.builder_at_end context (L.entry_block main_func_llvalue) in
+
 
   let translate_code curr_symbol_table builder program = match program with
-    SStmt(stmt) -> build_stmt main_func curr_symbol_table builder stmt
+    SStmt(stmt) -> build_stmt main_func_llvalue curr_symbol_table builder stmt
     | SFunc_def(func) -> build_function_body curr_symbol_table builder func
   in
   let build_code = List.fold_left (translate_code var_map) main_builder code
