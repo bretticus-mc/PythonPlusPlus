@@ -74,6 +74,7 @@ rule scan_token = parse
 	| "int" { INT }
 	| "String" { STRING }
 	| "None" { NONE }
+	| "return" { RETURN }
 	| "#" { read_single_line_comment lexbuf }
 	| "\"\"\"" { read_multi_line_comment lexbuf }
 	| digit+ as lem  { INT_LITERAL(int_of_string lem) }
