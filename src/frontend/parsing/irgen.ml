@@ -160,9 +160,9 @@ in
 
    in
   (* Fill in the body of the given function *)
-  let build_function_body curr_symbol_table fdecl =
+  let build_function_body curr_symbol_table builder fdecl =
     let (the_function, _) = StringMap.find fdecl.sfname function_decls in
-    let builder = L.builder_at_end context (L.entry_block the_function) in
+    let func_builder = L.builder_at_end context (L.entry_block the_function) in
 
 
     (* Construct the function's "locals": formal arguments and locally
@@ -172,13 +172,13 @@ in
       let add_formal m (var_name, var_typ) p =
         L.set_value_name var_name p;
         let local = L.build_alloca (ltype_of_typ var_typ) var_name builder in
-        ignore (L.build_store p local builder);
+        ignore (L.build_store p local func_builder);
         StringMap.add var_name local m
 
       (* Allocate space for any locally declared variables and add the
        * resulting registers to our map *)
       and add_local m (n, t) =
-        let local_var = L.build_alloca (ltype_of_typ t) n builder
+        let local_var = L.build_alloca (ltype_of_typ t) n func_builder
         in StringMap.add n local_var m
       in
       List.fold_left2 add_formal StringMap.empty fdecl.sformals
@@ -195,20 +195,20 @@ in
        if the current block does not already have a terminator.  Used,
        e.g., to handle the "fall off the end of the function" case. *)
     let add_terminal builder instr =
-      match L.block_terminator (L.insertion_block builder) with
+      match L.block_terminator (L.insertion_block func_builder) with
         Some _ -> ()
       | None -> ignore (instr builder) in
 
     
     (* Build the code for each statement in the function *)
-    let func_builder = build_stmt the_function curr_symbol_table builder (SBlock fdecl.sbody) in
+    let complete_func_builder = build_stmt the_function curr_symbol_table func_builder (SBlock fdecl.sbody) in
 
     (* Add a return if the last block falls off the end *)
-    add_terminal func_builder (L.build_ret (L.const_int i32_t 0)); 
-    builder 
+    add_terminal complete_func_builder (L.build_ret (L.const_int i32_t 0)); 
+    builder
   in
 
-  (* LLVM requires a 'main' function as an entry point. Borrowed from Boomslang *)
+  (* Psuedo "main" for top-level statements. Borrowed from Boomslang *)
   let main_t : L.lltype =
     L.var_arg_function_type i32_t [| |] in
   let main_func : L.llvalue =
@@ -217,7 +217,7 @@ in
 
   let translate_code curr_symbol_table builder program = match program with
     SStmt(stmt) -> build_stmt main_func curr_symbol_table builder stmt
-    | SFunc_def(func) -> build_function_body curr_symbol_table func
+    | SFunc_def(func) -> build_function_body curr_symbol_table builder func
   in
   let build_code = List.fold_left (translate_code StringMap.empty) main_builder code
   in
