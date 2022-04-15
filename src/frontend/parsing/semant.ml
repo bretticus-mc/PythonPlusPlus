@@ -16,8 +16,8 @@ let var_map = Hashtbl.create 12345
 
 let check (code) =
 
-  (* Verify a list of bindings has no duplicate names *)
-  (* Input: *)
+  (* Verify a list of declarations(E.g: x: int) has no duplicate names *)
+  (* Input: String, List *)
   let check_binds (kind : string) (binds : (string * typ) list) =
     let rec dups = function
         [] -> ()
@@ -39,7 +39,10 @@ let check (code) =
       body = [] } StringMap.empty (* Add this key/value pair to an empty map*)
   in
 
+  (* TODO: Create new function that creates new hashtable for user declared functions *)
+
   (* Add function name to symbol table *)
+  (* Input: *)
   let add_func map fd =
     let built_in_err = "function " ^ fd.fname ^ " may not be defined"
     and dup_err = "duplicate function " ^ fd.fname
@@ -54,7 +57,7 @@ let check (code) =
   let build_func_table map = function
     Func_def(f) -> add_func map f
     | _ -> map
-in
+  in
 
     (* Collect all function names into one symbol table 
   let function_decls = List.fold_left add_func built_in_decls functions
@@ -82,6 +85,7 @@ let type_of_identifier symbol_table s =
 in
 
 (* Return a semantically-checked expression, i.e., with a type *)
+(**)
 let rec check_expr symbol_table = function
       Literal l -> (Int, SLiteral l)
     | BoolLit l -> (Bool, SBoolLit l)
@@ -159,18 +163,19 @@ and check_top_stmt curr_symbol_table = function
     in
 
   let check_func curr_symbol_table func =
-    (* Make sure no formals or locals are void or duplicates *)
+    (* Make sure no duplicate formal arguments in function declaration *)
     check_binds "formal" func.formals;
     (* 
     let updated_function_decls = add_func function_decls func in
     ignore(updated_function_decls);
     *)
     let local_symbol_table = Hashtbl.copy curr_symbol_table in 
-
+    (* Hashtbl.add() *)
     let rec build_local_symbol_table table formals = 
       match formals with
       | [] -> table
       | hd::tl -> Hashtbl.add table (fst hd) (snd hd); build_local_symbol_table table tl
+      (* *)
     in
     ignore(build_local_symbol_table local_symbol_table func.formals);
     (* Build local symbol table of variables for this function 

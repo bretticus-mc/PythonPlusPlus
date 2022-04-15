@@ -1,4 +1,4 @@
-type op = Add | Sub | Equal | Neq | Less | Greater | And | Or
+type op = Add | Sub | Div | Mod | Equal | Neq | Less | Greater | And | Or
 
 type typ = Int | Bool | Float | String | None
 
@@ -6,11 +6,11 @@ type typ = Int | Bool | Float | String | None
 type expr =
     Literal of int
   | BoolLit of bool
-  | Id of string
   | StringLit of string
+  | Id of string
   | Binop of expr * op * expr
   | Assign of string * expr
-  | VariableInit of string * typ * expr
+  (* | VariableInit of string * typ * expr *)
   (* function call *)
   | Call of string * expr list (* Function Name and Function Arguments  *)
   
@@ -21,6 +21,7 @@ type stmt =
   | Expr of expr
   | If of expr * stmt * stmt
   | While of expr * stmt
+  | For of expr * expr * expr * stmt
   (* return *)
   | Return of expr
 
@@ -30,10 +31,10 @@ type bind = string * typ
 
 (* func_def: ret_typ fname formals locals body *)
 type func_def = {
-  rtyp: typ;
-  fname: string;
+  rtyp: typ; (* Function Return Type *)
+  fname: string; (* Function Name *)
   formals: bind list;
-  body: stmt list;
+  body: stmt list; (* Function Body *)
 }
 
 type code = 
@@ -47,6 +48,8 @@ type program =
 let string_of_op = function
     Add -> "+"
   | Sub -> "-"
+  | Div -> "/"
+  | Mod -> "%"
   | Equal -> "=="
   | Neq -> "!="
   | Less -> "<"

@@ -25,10 +25,10 @@ type sstmt =
 
 (* func_def: ret_typ fname formals locals body *)
 type sfunc_def = {
-  srtyp: typ;
-  sfname: string;
-  sformals: bind list;
-  sbody: sstmt list;
+  srtyp: typ; (* Function Return Type *)
+  sfname: string; (* Function Name *)
+  sformals: bind list; (* Function Arguments *) 
+  sbody: sstmt list; (* Function Body *)
 }
 
 type scode = 
