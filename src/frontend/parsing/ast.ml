@@ -5,7 +5,7 @@ type typ = Int | Bool | Float | String | None
 (* Defining what expressions can be *)
 type expr =
     Literal of int
-  | FloatLit of string (* TR: Changed from float *)
+  | FloatLit of string
   | BoolLit of bool
   | StringLit of string
   | Id of string
