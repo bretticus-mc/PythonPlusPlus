@@ -5,6 +5,7 @@ all: pythonpp.native
 # ocamlbuild -use-ocamlfind -pkgs str pythonpp.native 
 
 pythonpp.native:
+	ocamlbuild -pkgs llvm pythonpp.native
 	ocamlbuild test1.native
 	ocamlbuild test2.native
 
