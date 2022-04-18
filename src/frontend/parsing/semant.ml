@@ -153,7 +153,8 @@ and check_top_stmt curr_symbol_table = function
     | While(e, st) ->
       SWhile(check_bool_expr curr_symbol_table e, check_top_stmt curr_symbol_table st)
     | Return e ->
-      raise (Failure("Return statement must be inside function"))
+      let (t, e') = check_expr curr_symbol_table e in
+      SReturn (t, e')
   and 
   check_bool_expr curr_symbol_table e =
     let (t, e') = check_expr curr_symbol_table e in

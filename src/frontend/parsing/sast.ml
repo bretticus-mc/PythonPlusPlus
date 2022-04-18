@@ -47,22 +47,22 @@ let rec string_of_sexpr (t, e) =
       | SBoolLit(true) -> "True"
       | SBoolLit(false) -> "False"
       | SId(s) -> s
-      | SBinop(e1, o, e2) ->
+      | SBinop(e1, o, e2) -> "Binop: " ^
         string_of_sexpr e1 ^ " " ^ string_of_op o ^ " " ^ string_of_sexpr e2
-      | SAssign(v, e) -> v ^ " = " ^ string_of_sexpr e
-      | SVariableInit(v, t, e) -> v ^ " : " ^ string_of_typ t ^ " = " ^ string_of_sexpr e
+      | SAssign(v, e) -> "SAssign: " ^ v ^ " = " ^ string_of_sexpr e
+      | SVariableInit(v, t, e) -> "SVariable Init: " ^ v ^ " : " ^ string_of_typ t ^ " = " ^ string_of_sexpr e
       | SCall(f, el) ->
           f ^ "(" ^ String.concat ", " (List.map string_of_sexpr el) ^ ")"
     ) ^ ")"
 
 let rec string_of_sstmt = function
     SBlock(stmts) ->
-    "{\n" ^ String.concat "" (List.map string_of_sstmt stmts) ^ "}\n"
-  | SExpr(expr) -> string_of_sexpr expr ^ "\n"
-  | SReturn(expr) -> "return " ^ string_of_sexpr expr ^ "\n"
-  | SIf(e, s1, s2) ->  "if (" ^ string_of_sexpr e ^ ")\n" ^
+    "SBlock: {\n" ^ String.concat "" (List.map string_of_sstmt stmts) ^ "}\n"
+  | SExpr(expr) -> "SExpr: "^ string_of_sexpr expr ^ "\n"
+  | SReturn(expr) -> "SReturn: return " ^ string_of_sexpr expr ^ "\n"
+  | SIf(e, s1, s2) ->  "SIf: if (" ^ string_of_sexpr e ^ ")\n" ^
                        string_of_sstmt s1 ^ "else\n" ^ string_of_sstmt s2
-  | SWhile(e, s) -> "while (" ^ string_of_sexpr e ^ ") " ^ string_of_sstmt s
+  | SWhile(e, s) -> "Swhile: while " ^ string_of_sexpr e ^ ": " ^ string_of_sstmt s ^ "End of While Loop"
 
 let string_of_sfdecl fdecl =
   "def " ^ fdecl.sfname ^ "(" ^ 

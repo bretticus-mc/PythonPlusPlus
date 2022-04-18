@@ -1,4 +1,4 @@
-type op = Add | Sub | Mult | Div | Equal | Neq | Less | Greater | And | Or
+type op = Add | Sub | Mult | Div | Equal | Neq | Less | Greater | And | Or | Eq_Compar
 
 type typ = Int | Bool | Float | String | None
 
@@ -50,9 +50,10 @@ type program =
 let string_of_op = function
     Add -> "+"
   | Sub -> "-"
+  | Equal -> "="
   | Div -> "/"
   | Mult -> "*"
-  | Equal -> "=="
+  | Eq_Compar -> "=="
   | Neq -> "!="
   | Less -> "<"
   | Greater -> ">"

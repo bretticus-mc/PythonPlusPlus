@@ -47,6 +47,7 @@ rule scan_token = parse
 	| ":" { COLON }
 	| ";" { SEMI }
 	| "=" { EQ }
+	| "%" { MOD }
 	| "+" { PLUS }
 	| "-" { MINUS }
 	| "*" { MULT }
@@ -62,10 +63,11 @@ rule scan_token = parse
 	| "or" { OR }
 	| "not" { NOT }
 	| "!" { EXCLAMATION }
-	| "==" { EQEQUAL }
-	| "!=" { NOTEQUAL }
+	| "==" { EQ_COMPARISON }
+	| "!=" { NOT_EQ }
 	| "True" { BLIT(true)  }
 	| "False" { BLIT(false) }
+	| "return" { RETURN }
 	| "def" { DEF }
 	| "if" { IF }
 	| "else" { ELSE }
