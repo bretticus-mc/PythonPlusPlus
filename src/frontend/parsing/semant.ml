@@ -31,8 +31,8 @@ let check (code) =
   let built_in_decls =
     (* Add the key: "print" and value: Function Definition *)
     StringMap.add "print" {
-      rtyp = Int;
-      (* rtyp = String; *)
+      (* rtyp = Int; *)
+      rtyp = String;
       fname = "print";
       formals = [("x", Int)]; 
       (* formals = [("x", String)]; *)
