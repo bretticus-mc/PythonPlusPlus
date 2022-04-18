@@ -1,13 +1,14 @@
-type op = Add | Sub | Equal | Neq | Less | Greater | And | Or
+type op = Add | Sub | Mult | Div | Equal | Neq | Less | Greater | And | Or
 
 type typ = Int | Bool | Float | String | None
 
 (* Defining what expressions can be *)
 type expr =
     Literal of int
+  | FloatLit of string
   | BoolLit of bool
-  | Id of string
   | StringLit of string
+  | Id of string
   | Binop of expr * op * expr
   | Assign of string * expr
   | VariableInit of string * typ * expr
@@ -21,6 +22,7 @@ type stmt =
   | Expr of expr
   | If of expr * stmt * stmt
   | While of expr * stmt
+  (* | For of expr * expr * expr * stmt *)
   (* return *)
   | Return of expr
 
@@ -30,10 +32,10 @@ type bind = string * typ
 
 (* func_def: ret_typ fname formals locals body *)
 type func_def = {
-  rtyp: typ;
-  fname: string;
+  rtyp: typ; (* Function Return Type *)
+  fname: string; (* Function Name *)
   formals: bind list;
-  body: stmt list;
+  body: stmt list; (* Function Body *)
 }
 
 type code = 
@@ -44,9 +46,12 @@ type program =
     code list (* global variables and then list of function declarations *) 
 
 (* Pretty-printing functions *)
+
 let string_of_op = function
     Add -> "+"
   | Sub -> "-"
+  | Div -> "/"
+  | Mult -> "*"
   | Equal -> "=="
   | Neq -> "!="
   | Less -> "<"
@@ -63,6 +68,7 @@ let string_of_typ = function
   
 let rec string_of_expr = function
     Literal(l) -> string_of_int l
+  | FloatLit(l) -> l
   | BoolLit(true) -> "True"
   | BoolLit(false) -> "False"
   | StringLit(s) -> s

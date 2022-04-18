@@ -25,6 +25,8 @@
 
 let digit = ['0'-'9']
 let letter = ['a'-'z' 'A'-'Z']
+let flt = digit*'.'digit+
+let string_literal = ('"'[' '-'~']*'"')
 
 let whitespace = [' ' '\t']+
 let newline = '\r' | '\n' | "\r\n"
@@ -53,7 +55,6 @@ rule scan_token = parse
 	| "-=" { MINUS_EQ }
 	| "*=" { MULT_EQ }
 	| "/=" { DIV_EQ }
-	| "%" { REM }
 	| "<" { LT }
 	| ">" { GT }
 	| "->" { ARROW }
@@ -74,10 +75,13 @@ rule scan_token = parse
 	| "int" { INT }
 	| "String" { STRING }
 	| "None" { NONE }
+	| "return" { RETURN }
+	| "float" { FLOAT }
 	| "#" { read_single_line_comment lexbuf }
 	| "\"\"\"" { read_multi_line_comment lexbuf }
 	| digit+ as lem  { INT_LITERAL(int_of_string lem) }
 	| '"'['a'-'z' 'A'-'Z' ' ']*'"' as lem {STRING_LITERAL(lem)}
+	| flt as lem { FLOAT_LITERAL(lem)}
 	| letter (digit | letter | '_')* as lem { ID(lem) }
 	| ['\n']  { NEWLINE }
 	| eof { EOF }
