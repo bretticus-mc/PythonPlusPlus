@@ -6,6 +6,7 @@ type sexpr = typ * sx
 
 and sx =
     SLiteral of int
+  | SFloatLit of string
   | SBoolLit of bool
   | SId of string
   | SBinop of sexpr * op * sexpr
@@ -25,10 +26,10 @@ type sstmt =
 
 (* func_def: ret_typ fname formals locals body *)
 type sfunc_def = {
-  srtyp: typ;
-  sfname: string;
-  sformals: bind list;
-  sbody: sstmt list;
+  srtyp: typ; (* Function Return Type *)
+  sfname: string; (* Function Name *)
+  sformals: bind list; (* Function Arguments *) 
+  sbody: sstmt list; (* Function Body *)
 }
 
 type scode = 
@@ -41,6 +42,7 @@ type sprogram = scode list
 let rec string_of_sexpr (t, e) =
   "(" ^ string_of_typ t ^ " : " ^ (match e with
         SLiteral(l) -> string_of_int l
+      | SFloatLit(l) -> l
       | SStringLit(l) -> l
       | SBoolLit(true) -> "True"
       | SBoolLit(false) -> "False"
