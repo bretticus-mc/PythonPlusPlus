@@ -1,14 +1,18 @@
-type op = Add | Sub | Equal | Neq | Less | Greater | And | Or
+type op = Add | Sub | Mult | Div | Equal | Neq | Less | Greater | And | Or | Eq_Compar | Bit_And
 
-type typ = Int | Bool | Float | String | None
+type typ = Int | Bool | Float | String | None | Pointer of typ
+
+type uop = Neg | Not | Deref  | Refer
 
 (* Defining what expressions can be *)
 type expr =
     Literal of int
+  | FloatLit of string
   | BoolLit of bool
-  | Id of string
   | StringLit of string
+  | Id of string
   | Binop of expr * op * expr
+  | Unop of uop * expr
   | Assign of string * expr
   | VariableInit of string * typ * expr
   (* function call *)
@@ -21,6 +25,7 @@ type stmt =
   | Expr of expr
   | If of expr * stmt * stmt
   | While of expr * stmt
+  (* | For of expr * expr * expr * stmt *)
   (* return *)
   | Return of expr
 
@@ -30,10 +35,10 @@ type bind = string * typ
 
 (* func_def: ret_typ fname formals locals body *)
 type func_def = {
-  rtyp: typ;
-  fname: string;
+  rtyp: typ; (* Function Return Type *)
+  fname: string; (* Function Name *)
   formals: bind list;
-  body: stmt list;
+  body: stmt list; (* Function Body *)
 }
 
 type code = 
@@ -44,25 +49,38 @@ type program =
     code list (* global variables and then list of function declarations *) 
 
 (* Pretty-printing functions *)
+
 let string_of_op = function
     Add -> "+"
   | Sub -> "-"
   | Equal -> "="
+  | Div -> "/"
+  | Mult -> "*"
+  | Eq_Compar -> "=="
   | Neq -> "!="
   | Less -> "<"
   | Greater -> ">"
   | And -> "and"
   | Or -> "or"
+  | Bit_And -> "&"
 
-let string_of_typ = function
+let rec string_of_typ = function
     Int -> "int"
   | Bool -> "bool"
   | Float -> "float"
   | String -> "String"
   | None -> "None"
+  | Pointer t ->  string_of_typ t
+
+  let string_of_uop = function
+    Neg -> "-"
+  | Not -> "!"
+  | Deref -> "&"
+  | Refer -> "*"
   
 let rec string_of_expr = function
     Literal(l) -> string_of_int l
+  | FloatLit(l) -> l
   | BoolLit(true) -> "True"
   | BoolLit(false) -> "False"
   | StringLit(s) -> s
@@ -70,6 +88,7 @@ let rec string_of_expr = function
   | Binop(e1, o, e2) ->
     string_of_expr e1 ^ " " ^ string_of_op o ^ " " ^ string_of_expr e2
   | Assign(v, e) -> v ^ " = " ^ string_of_expr e
+  | Unop(o, e) -> string_of_uop o ^ string_of_expr e
   | VariableInit(v, t, e) -> v ^ " : " ^ string_of_typ t ^ " = " ^ string_of_expr e
   | Call(f, el) ->
       f ^ "(" ^ String.concat ", " (List.map string_of_expr el) ^ ")"

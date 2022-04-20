@@ -32,6 +32,7 @@ let translate (code: Sast.scode list) =
   let i32_t      = L.i32_type    context
   and i8_t       = L.i8_type     context
   and i1_t       = L.i1_type     context 
+  and float_t    = L.double_type context
   and none_t     = L.void_type   context
 in
 
@@ -45,7 +46,7 @@ in
   (* Create a map of global variables after creating each 
   let global_vars : L.llvalue StringMap.t =
     let global_var m (t, n) =
-      let init = L.const_int (ltype_of_typ t) 0
+    let init = L.const_int (ltype_of_typ t) 0
       in StringMap.add n (L.define_global n init the_module) m in
     List.fold_left global_var StringMap.empty globals in
   *)
@@ -79,9 +80,10 @@ in
  
   (* Construct code for an expression; return its value *)
   let rec build_expr curr_symbol_table builder ((_, e) : sexpr) = match e with
-    SLiteral i  -> L.const_int i32_t i
+     SLiteral i  -> L.const_int i32_t i
 (*  | SStringLit s -> *)
     | SBoolLit b  -> L.const_int i1_t (if b then 1 else 0)
+    | SFloatLit l -> L.const_float_of_string float_t l
     | SId s       -> L.build_load (lookup curr_symbol_table s) s builder
     | SAssign (s, e) -> let e' = build_expr curr_symbol_table builder e in
       ignore(L.build_store e' (lookup curr_symbol_table s) builder); e'
@@ -90,18 +92,40 @@ in
       in
       ignore(Hashtbl.add curr_symbol_table var_name var_allocation);
       ignore(L.build_store s_expr' var_allocation builder); s_expr' (* TODO: Should s_expr' be return value? *)
+    | SBinop ((A.Float,_ ) as e1, op, e2) ->
+	  let e1' = build_expr curr_symbol_table builder e1
+	  and e2' = build_expr curr_symbol_table builder e2 in
+	  (match op with 
+	    A.Add     -> L.build_fadd
+	  | A.Sub     -> L.build_fsub
+	  | A.Mult    -> L.build_fmul
+	  | A.Div     -> L.build_fdiv 
+	  | A.Equal   -> L.build_fcmp L.Fcmp.Oeq
+	  | A.Neq     -> L.build_fcmp L.Fcmp.One
+	  | A.Less    -> L.build_fcmp L.Fcmp.Olt
+	  | A.And | A.Or ->
+	      raise (Failure "internal error: semant should have rejected and/or on float")
+	  ) e1' e2' "tmp" builder
     | SBinop (e1, op, e2) ->
       let e1' = build_expr curr_symbol_table builder e1
       and e2' = build_expr curr_symbol_table builder e2 in
       (match op with
         A.Add     -> L.build_add
       | A.Sub     -> L.build_sub
+      | A.Mult    -> L.build_fmul
+      | A.Div     -> L.build_sdiv
       | A.And     -> L.build_and
       | A.Or      -> L.build_or
       | A.Equal   -> L.build_icmp L.Icmp.Eq
       | A.Neq     -> L.build_icmp L.Icmp.Ne
       | A.Less    -> L.build_icmp L.Icmp.Slt
       ) e1' e2' "tmp" builder
+    | SUnop(op, ((t, _) as e)) ->
+          let e' = build_expr curr_symbol_table builder e in
+	  (match op with
+	    A.Neg when t = A.Float -> L.build_fneg 
+	  | A.Neg                  -> L.build_neg
+    | A.Not                  -> L.build_not) e' "tmp" builder
     | SCall ("print", [e]) ->
       let int_format_str = L.build_global_stringptr "%d\n" "fmt" builder in
      (* L.build_call printf_func [|(build_expr curr_symbol_table builder e);|] *)
@@ -211,7 +235,7 @@ in
   let main_t : L.lltype =
     L.var_arg_function_type i32_t [| |] in
   let main_func_llvalue : L.llvalue =
-    L.define_function "main" main_t the_module in
+    L.define_function "()" main_t the_module in
   let main_builder = L.builder_at_end context (L.entry_block main_func_llvalue) in
 
 

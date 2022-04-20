@@ -2,29 +2,40 @@
 open Ast
 %}
 
-%token SEMI LPAREN RPAREN LBRACE RBRACE PLUS MINUS ASSIGN MULT DIV
-%token EQ LT GT AND OR NOT DOT PLUS_EQ MINUS_EQ MULT_EQ DIV_EQ
-%token IF ELSE WHILE INT STRING BOOL REM RANGLE ARROW
-%token EXCLAMATION EQEQ_COMPARISON NOT_EQ TRUE FALSE NONE COLON
-%token DEF FOR IN NEWLINE
-/* return, COMMA token */
-%token RETURN COMMA
-%token <float> FLOAT
+/* Types */
+%token INT FLOAT BOOL STRING
+
+/* Operators */
+%token PLUS MINUS MULT DIV ASSIGN
+
+/* Comparators */
+%token NOT EQ NOT_EQ LT GT AND OR NOT DOT PLUS_EQ MINUS_EQ MULT_EQ DIV_EQ EXCLAMATION EQ_COMPARISON IN COLON
+
+%token IF ELSE WHILE FOR DEF RETURN COMMA NEWLINE
+%token SEMI LPAREN RPAREN LBRACE RBRACE
+%token TRUE FALSE NONE
+%token MOD RANGLE ARROW
+
+%token <string> FLOAT_LITERAL
 %token <int> INT_LITERAL
 %token <bool> BLIT
 %token <string> ID
 %token <string> STRING_LITERAL
 %token EOF
+%token Bit_And
 
 %start program
 %type <Ast.program> program
 
-%right EQ
+%right ASSIGN
 %left OR
 %left AND
-%left EQEQ_COMPARISON NOT_EQ
+%left EQ NEQ
+%left EQ_COMPARISON NOT_EQ
 %left LT GT
 %left PLUS MINUS
+%left MULT DIV
+%right NOT Bit_And
 
 %%
 
@@ -84,9 +95,8 @@ stmt:
     expr NEWLINE                            { Expr $1 }
   | expr EOF                                { Expr $1 }
   | LBRACE stmt_list RBRACE                 { Block $2 }
-  /* if (condition) { block1} else {block2} */
-  /* if (condition) stmt else stmt */
-  | IF LPAREN expr RPAREN stmt ELSE stmt    { If($3, $5, $7) }
+  /* if (condition): /n stmt else /n stmt */
+  | IF LPAREN expr RPAREN COLON NEWLINE stmt ELSE COLON NEWLINE stmt    { If($3, $7, $11) }
   | WHILE LPAREN expr RPAREN COLON NEWLINE stmt { While ($3, $7)  }
   /* return */
   | RETURN expr NEWLINE                       { Return $2   }
@@ -94,18 +104,22 @@ stmt:
 
 
 expr:
-  INT_LITERAL                 { Literal($1)            }
-  | BLIT                      { BoolLit($1)            }
-  | STRING_LITERAL            { StringLit($1) } 
-  | ID                        { Id($1)                 }
-  | expr PLUS   expr          { Binop($1, Add,   $3)   }
-  | expr MINUS  expr          { Binop($1, Sub,   $3)   }
-  | expr EQEQ_COMPARISON expr { Binop($1, Equal, $3)   } 
-  | expr NOT_EQ  expr          { Binop($1, Neq, $3)     }
-  | expr LT expr              { Binop($1, Less,  $3)   }
-  | expr GT expr              { Binop($1, Greater,  $3)   }
-  | expr AND    expr          { Binop($1, And,   $3)   }
+    INT_LITERAL      { Literal($1)            }
+  | FLOAT_LITERAL    { FloatLit($1)           }
+  | BLIT             { BoolLit($1)            }
+  | STRING_LITERAL   { StringLit($1) } 
+  | ID               { Id($1)                 }
+  | expr PLUS   expr { Binop($1, Add,   $3)   }
+  | expr MINUS  expr { Binop($1, Sub,   $3)   }
+  | expr MULT expr   { Binop($1, Mult,   $3)   }
+  | expr DIV expr    { Binop($1, Div,   $3)   }
+  | expr EQ_COMPARISON expr { Binop($1, Eq_Compar, $3)   }
+  | expr NOT_EQ    expr { Binop($1, Neq, $3)     }
+  | expr LT     expr { Binop($1, Less,  $3)   }
+  | expr GT     expr { Binop($1, Greater,  $3)   }
+  | expr AND    expr { Binop($1, And,   $3)   }
   | expr OR     expr { Binop($1, Or,    $3)   }
+  | NOT expr         { Unop(Not, $2)          }
   | ID EQ expr   { Assign($1, $3)         }
   | LPAREN expr RPAREN { $2                   }
   | ID COLON typ EQ expr { VariableInit($1, $3, $5) } /* Variable Declaration */
