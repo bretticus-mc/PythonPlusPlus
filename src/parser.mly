@@ -6,7 +6,7 @@ open Ast
 %token INT FLOAT BOOL STRING
 
 /* Operators */
-%token PLUS MINUS MULT DIV ASSIGN
+%token PLUS MINUS MULT DIV 
 
 /* Comparators */
 %token NOT EQ NOT_EQ LT GT AND OR NOT DOT PLUS_EQ MINUS_EQ MULT_EQ DIV_EQ EXCLAMATION EQ_COMPARISON IN COLON
@@ -26,8 +26,6 @@ open Ast
 
 %start program
 %type <Ast.program> program
-
-%right ASSIGN
 %left OR
 %left AND
 %left EQ NEQ
