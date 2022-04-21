@@ -11,11 +11,16 @@ and sx =
   | SId of string
   | SBinop of sexpr * op * sexpr
   | SUnop of uop * sexpr
-  | SAssign of string * sexpr
+  | SAssign of sexpr * sexpr
   | SStringLit of string
   | SVariableInit of string * typ * sexpr
   (* call *)
   | SCall of string * sexpr list
+  | SSubscript of sexpr * sexpr
+  | SRefer of string
+  | SDeref of sexpr
+  | SNoexpr
+
 
 type sstmt =
     SBlock of sstmt list
@@ -51,12 +56,15 @@ let rec string_of_sexpr (t, e) =
       | SBinop(e1, o, e2) -> "Binop: " ^
         string_of_sexpr e1 ^ " " ^ string_of_op o ^ " " ^ string_of_sexpr e2
       | SUnop(o, e) -> string_of_uop o ^ string_of_sexpr e
-      | SAssign(v, e) -> "SAssign: " ^ v ^ " = " ^ string_of_sexpr e
+      | SAssign (v, e) -> string_of_sexpr v ^ " = " ^ string_of_sexpr e
       | SVariableInit(v, t, e) -> "SVariable Init: " ^ v ^ " : " ^ string_of_typ t ^ " = " ^ string_of_sexpr e
-      | SCall(f, el) ->
-          f ^ "(" ^ String.concat ", " (List.map string_of_sexpr el) ^ ")"
-    ) ^ ")"
-
+      | SCall (f, el) ->
+        f ^ "(" ^ String.concat ", " (List.map string_of_sexpr el) ^ ")"
+      | SSubscript (e, s) -> string_of_sexpr e ^ "[" ^ string_of_sexpr s ^ "]"
+      | SRefer s -> "&" ^ s
+      | SDeref e -> "*" ^ string_of_sexpr e
+      | SNoexpr -> "" )
+      ^ ")"
 let rec string_of_sstmt = function
     SBlock(stmts) ->
     "SBlock: {\n" ^ String.concat "" (List.map string_of_sstmt stmts) ^ "}\n"

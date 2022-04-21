@@ -1,8 +1,10 @@
-type op = Add | Sub | Mult | Div | Equal | Neq | Less | Greater | And | Or | Eq_Compar | Bit_And
+type op = Add | Sub | Mult | Div | Equal | Neq | Less | Leq | Geq | LeqGreater | Greater |And | Or | Eq_Compar | Bit_And
+
+type uop = Neg | Not 
 
 type typ = Int | Bool | Float | String | None | Pointer of typ
 
-type uop = Neg | Not | Deref  | Refer
+
 
 (* Defining what expressions can be *)
 type expr =
@@ -13,10 +15,14 @@ type expr =
   | Id of string
   | Binop of expr * op * expr
   | Unop of uop * expr
-  | Assign of string * expr
+  | Assign of expr * expr
   | VariableInit of string * typ * expr
   (* function call *)
   | Call of string * expr list (* Function Name and Function Arguments  *)
+  | Subscript of expr * expr
+  | Refer of string
+  | Deref of expr
+  | Noexpr
   
 
 (* Defining what statements can be *)
@@ -70,13 +76,13 @@ let rec string_of_typ = function
   | Float -> "float"
   | String -> "String"
   | None -> "None"
-  | Pointer t ->  string_of_typ t
+  | Pointer t -> string_of_typ t ^ "*"
+ 
 
   let string_of_uop = function
     Neg -> "-"
   | Not -> "!"
-  | Deref -> "&"
-  | Refer -> "*"
+ 
   
 let rec string_of_expr = function
     Literal(l) -> string_of_int l
@@ -87,11 +93,15 @@ let rec string_of_expr = function
   | Id(s) -> s
   | Binop(e1, o, e2) ->
     string_of_expr e1 ^ " " ^ string_of_op o ^ " " ^ string_of_expr e2
-  | Assign(v, e) -> v ^ " = " ^ string_of_expr e
+  | Assign(v, e) -> string_of_expr v ^ " = " ^ string_of_expr e
   | Unop(o, e) -> string_of_uop o ^ string_of_expr e
   | VariableInit(v, t, e) -> v ^ " : " ^ string_of_typ t ^ " = " ^ string_of_expr e
   | Call(f, el) ->
       f ^ "(" ^ String.concat ", " (List.map string_of_expr el) ^ ")"
+  | Subscript (e, s) -> string_of_expr e ^ "[" ^ string_of_expr s ^ "]"
+  | Refer s -> "&" ^ s
+  | Deref e -> "*" ^ string_of_expr e
+  | Noexpr -> ""
 
 let rec string_of_stmt = function
     Block(stmts) ->

@@ -41,7 +41,10 @@ let check (code) =
     in List.fold_left add_bind StringMap.empty [("print", Int);
                                ("printb", Bool);
                                ("printf", Float);
-                               ("prints", String);] 
+                               ("prints", String);
+                               ("sizeof", Pointer(Int));
+                               ("malloc",Pointer(Int));
+                               ("free", Pointer(Int))] 
     (* Add the key: "print" and value: Function Definition *)
   in
 
@@ -66,12 +69,13 @@ let check (code) =
   (* Collect all function declarations into symbol table *)
   let function_decls = List.fold_left build_func_table built_in_decls code
   in
+  let is_pointer p = match p with Pointer _ -> true | _ -> false in
 
   (* Return a function from symbol table *)
   let find_func s =
     try StringMap.find s function_decls
     with Not_found -> raise (Failure ("unrecognized function " ^ s))
-  in
+in
 
 (* Raise an exception if the given rvalue type cannot be assigned to
    the given lvalue type *)
@@ -84,7 +88,11 @@ let type_of_identifier symbol_table s =
   try Hashtbl.find symbol_table s
   with Not_found -> raise (Failure ("undeclared identifier " ^ s))
 in
-
+let rec deref p =
+    match p with
+    | Pointer s -> s
+    | _ -> raise (Failure "cannot dereference expression")
+in
 (* Return a semantically-checked expression, i.e., with a type *)
 let rec check_expr symbol_table = function
       Literal l -> (Int, SLiteral l)
@@ -95,44 +103,50 @@ let rec check_expr symbol_table = function
     | VariableInit(var, t, e) -> (* var = Variable Name, t = Type, e = Expression *) 
         ignore(Hashtbl.add symbol_table var t);  (* Add Variable to Hashtable *)
       (t, SVariableInit(var, t, (check_expr symbol_table e))) (* Check if it is added properly *)
-    | Assign(var, e) as ex ->
-      let lt = type_of_identifier symbol_table var
-      and (rt, e') = check_expr symbol_table e in
-      let err = "illegal assignment " ^ string_of_typ lt ^ " = " ^
-                string_of_typ rt ^ " in " ^ string_of_expr ex
-    in
-      (check_assign lt rt err, SAssign(var, (rt, e')))
+    | Assign (e1, e2) as ex ->
+        let t1, e1' = check_expr symbol_table e1 and (t2, e2') = check_expr symbol_table e2 in    
+        let err =
+             "illegal assignment " ^ string_of_typ t1 ^ " = " ^ string_of_typ t2
+              ^ " in " ^ string_of_expr ex
+             and vt =
+                match e1 with
+                | Id _ | Subscript (_, _) | Deref _ -> t1
+                 | _ -> raise (Failure "left expression is not assignable")
+             in
+             (check_assign t1 t2 err, SAssign ((vt, e1'), (t2, e2')))
     | Unop(op, e) as ex -> 
           let (t, e') = check_expr symbol_table e in
           let ty = match op with
             Neg when t = Int || t = Float -> t
           | Not when t = Bool -> Bool
-          | Deref when t = Int || t = Float -> t
-          | Refer when t = Int || t = Float -> t
           | _ -> raise (Failure ("illegal unary operator " ^ 
                                  string_of_uop op ^ string_of_typ t ^
                                  " in " ^ string_of_expr ex))
-          in (ty, SUnop(op, (t, e')))
+          in (ty, SUnop(op, (t, e')))           
     | Binop(e1, op, e2) as e ->
-      let (t1, e1') = check_expr symbol_table e1
-      and (t2, e2') = check_expr symbol_table e2 in
-      let err = "illegal binary operator " ^
+        let t1, e1' = check_expr symbol_table e1  and t2, e2' = check_expr symbol_table e2 in
+        let err = "illegal binary operator " ^
                 string_of_typ t1 ^ " " ^ string_of_op op ^ " " ^
                 string_of_typ t2 ^ " in " ^ string_of_expr e
       in
       (* All binary operators require operands of the same type*)
       if t1 = t2 then
         (* Determine expression type based on operator and operand types *)
-        let t = match op with
-            Add | Sub | Div | Mult when t1 = Int -> Int
+        let t = 
+        match op with
+          | Add | Sub | Div | Mult when t1 = Int -> Int
           | Add | Sub | Div | Mult when t1 = Float -> Float
-          | Equal | Neq -> Bool
-          | Less when t1 = Int -> Bool
+          | (Equal | Neq) -> Bool
+          | (Less | Leq | Greater | Geq) 
+             when t1 = Int || t1 = Float || is_pointer t1  -> Bool
           | And | Or when t1 = Bool -> Bool
-          | _ -> raise (Failure err)
+          (* pointer addition and subtraction *)
+          | (Add | Sub) when is_pointer t1 && t2 = Int -> t1
+          | _ -> raise(Failure err)
+              
         in
-        (t, SBinop((t1, e1'), op, (t2, e2')))
-      else raise (Failure err)
+          (t, SBinop ((t1, e1'), op, (t2, e2')))
+      else raise (Failure err)                   
     | Call(fname, args) as call ->
       let fd = find_func fname in
       let param_length = List.length fd.formals in
@@ -147,6 +161,25 @@ let rec check_expr symbol_table = function
         in
         let args' = List.map2 check_call fd.formals args
         in (fd.rtyp, SCall(fname, args'))
+
+      (* subscript main expr must be a pointer and the subscript must be integer *)
+      | Subscript (e, s) ->
+          let te, e' = check_expr symbol_table e and ts, s' = check_expr  symbol_table  s in
+          if ts != Int then raise (Failure "subscript expression not integral")
+          else
+            let ts =
+              match te with
+              | Pointer p -> p
+              | _ -> raise (Failure "main expression not a pointer")
+            in
+            (ts, SSubscript ((te, e'), (ts, s')))
+
+      | Refer s -> (Pointer (type_of_identifier symbol_table s), SRefer s)
+
+      | Deref e ->
+          let t, e' = check_expr symbol_table e in
+          if is_pointer t then (deref t, SDeref (t, e'))
+          else raise (Failure "cannot dereference expression")
   in
 
 let rec check_stmt_list curr_symbol_table  = function
