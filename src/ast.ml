@@ -1,36 +1,41 @@
-type op = Add | Sub | Equal | Neq | Less | Greater | And | Or
+type op = Add | Sub | Mult | Div | Equal | Neq | Less | Greater | And | Or | Eq_Compar
 
 type typ = Int | Bool | Float | String | None
 
+(* Defining what expressions can be *)
 type expr =
     Literal of int
+  | FloatLit of string
   | BoolLit of bool
-  | Id of string
   | StringLit of string
+  | Id of string
   | Binop of expr * op * expr
   | Assign of string * expr
+  | VariableInit of string * typ * expr
   (* function call *)
-  | Call of string * expr list (* function name  *)
+  | Call of string * expr list (* Function Name and Function Arguments  *)
   
 
+(* Defining what statements can be *)
 type stmt =
     Block of stmt list
   | Expr of expr
   | If of expr * stmt * stmt
   | While of expr * stmt
+  (* | For of expr * expr * expr * stmt *)
   (* return *)
   | Return of expr
 
-(* int x: name binding 
-type bind = typ * string *)
-type bind = string * typ
+
+(* x: int *)
+type bind = string * typ 
 
 (* func_def: ret_typ fname formals locals body *)
 type func_def = {
-  rtyp: typ;
-  fname: string;
+  rtyp: typ; (* Function Return Type *)
+  fname: string; (* Function Name *)
   formals: bind list;
-  body: stmt list;
+  body: stmt list; (* Function Body *)
 }
 
 type code = 
@@ -41,18 +46,30 @@ type program =
     code list (* global variables and then list of function declarations *) 
 
 (* Pretty-printing functions *)
+
 let string_of_op = function
     Add -> "+"
   | Sub -> "-"
-  | Equal -> "=="
+  | Equal -> "="
+  | Div -> "/"
+  | Mult -> "*"
+  | Eq_Compar -> "=="
   | Neq -> "!="
   | Less -> "<"
   | Greater -> ">"
   | And -> "and"
   | Or -> "or"
 
+let string_of_typ = function
+    Int -> "int"
+  | Bool -> "bool"
+  | Float -> "float"
+  | String -> "String"
+  | None -> "None"
+  
 let rec string_of_expr = function
     Literal(l) -> string_of_int l
+  | FloatLit(l) -> l
   | BoolLit(true) -> "True"
   | BoolLit(false) -> "False"
   | StringLit(s) -> s
@@ -60,6 +77,7 @@ let rec string_of_expr = function
   | Binop(e1, o, e2) ->
     string_of_expr e1 ^ " " ^ string_of_op o ^ " " ^ string_of_expr e2
   | Assign(v, e) -> v ^ " = " ^ string_of_expr e
+  | VariableInit(v, t, e) -> v ^ " : " ^ string_of_typ t ^ " = " ^ string_of_expr e
   | Call(f, el) ->
       f ^ "(" ^ String.concat ", " (List.map string_of_expr el) ^ ")"
 
@@ -72,12 +90,7 @@ let rec string_of_stmt = function
                       string_of_stmt s1 ^ "else\n" ^ string_of_stmt s2
   | While(e, s) -> "while (" ^ string_of_expr e ^ ") " ^ string_of_stmt s
 
-let string_of_typ = function
-    Int -> "int"
-  | Bool -> "bool"
-  | Float -> "float"
-  | String -> "String"
-  | None -> "None"
+
 
 let string_of_fdecl fdecl =
     "def " ^ fdecl.fname ^ "(" ^ 
