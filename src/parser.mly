@@ -92,7 +92,7 @@ stmt:
   | expr EOF                                { Expr $1 }
   | LBRACE stmt_list RBRACE                 { Block $2 }
   /* if (condition): /n stmt else /n stmt */
-  | IF LPAREN expr RPAREN COLON NEWLINE stmt ELSE COLON NEWLINE stmt    { If($3, $7, $11) }
+  | IF LPAREN expr RPAREN COLON NEWLINE INDENT stmt DEDENT ELSE COLON NEWLINE INDENT stmt DEDENT   { If($3, $8, $14) }
   | WHILE LPAREN expr RPAREN COLON NEWLINE stmt { While ($3, $7)  }
   /* return */
   | RETURN expr NEWLINE                       { Return $2   }
