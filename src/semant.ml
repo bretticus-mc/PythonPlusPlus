@@ -143,7 +143,7 @@ let rec check_expr symbol_table = function
           (* pointer addition and subtraction *)
           | (Add | Sub) when is_pointer t1 && t2 = Int -> t1
           | _ -> raise(Failure err)
-              
+            
         in
           (t, SBinop ((t1, e1'), op, (t2, e2')))
       else raise (Failure err)                   

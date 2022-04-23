@@ -54,11 +54,9 @@ in
       in StringMap.add n (L.define_global n init the_module) m in
     List.fold_left global_var StringMap.empty globals in
   *)
+  
 
-  let printf_t : L.lltype =
-    L.var_arg_function_type i32_t [| L.pointer_type i8_t |] in
-  let printf_func : L.llvalue =
-    L.declare_function "printf" printf_t the_module in
+ 
 
   (* Define each function (arguments and return type) so we can
      call it even before we've created its body *)
@@ -74,6 +72,10 @@ in
       | SStmt(stmt) -> map
       in
     List.fold_left func_decl_intermediary StringMap.empty code in
+     let printf_t : L.lltype =
+    L.var_arg_function_type i32_t [| L.pointer_type i8_t |] in
+  let printf_func : L.llvalue =
+    L.declare_function "printf" printf_t the_module in
 
   (* Return the value for a variable or formal argument.
       Check local names first, then global names *)
@@ -85,7 +87,6 @@ in
   (* Construct code for an expression; return its value *)
   let rec build_expr curr_symbol_table builder ((_, e) : sexpr) = match e with
      SLiteral i  -> L.const_int i32_t i
-(*  | SStringLit s -> *)
     | SBoolLit b  -> L.const_int i1_t (if b then 1 else 0)
     | SFloatLit l -> L.const_float_of_string float_t l
     | SNoexpr ->     L.const_int i32_t 0
@@ -195,8 +196,8 @@ in
           in
           L.build_load e "deref" builder
       | SDeref s -> L.build_load (build_expr curr_symbol_table builder s) "deref" builder
-      | SRefer s -> lookup  curr_symbol_table  s
-
+      | SRefer s -> lookup  curr_symbol_table    s
+    
     | SCall ("print", [e]) ->
       let int_format_str = L.build_global_stringptr "%d\n" "fmt" builder in
      (* L.build_call printf_func [|(build_expr curr_symbol_table builder e);|] *)

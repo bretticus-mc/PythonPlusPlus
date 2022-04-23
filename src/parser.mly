@@ -1,42 +1,42 @@
 %{
 open Ast
 %}
-
-/* Types */
-%token INT FLOAT BOOL STRING
-
-/* Operators */
-%token PLUS MINUS MULT DIV 
-
-/* Comparators */
-%token NOT EQ NOT_EQ LT GT AND OR NOT DOT PLUS_EQ MINUS_EQ MULT_EQ DIV_EQ EXCLAMATION EQ_COMPARISON IN COLON
-
-%token IF ELSE WHILE FOR DEF RETURN COMMA NEWLINE
-%token SEMI LPAREN RPAREN LBRACE RBRACE
-%token TRUE FALSE NONE
-%token MOD RANGLE ARROW
-
-%token <string> FLOAT_LITERAL
-%token <int> INT_LITERAL
-%token <bool> BLIT
+%token INT BOOL FLOAT STRING NONE POINTER
 %token <string> ID
+%token <int> INT_LITERAL
+%token <string> FLOAT_LITERAL
+%token <bool> BLIT
 %token <string> STRING_LITERAL
-%token EOF
-%token Bit_And
+
+%token NEWLINE %token %token EOF
+%token TRUE    %token FALSE  %token NONE
+%token IF      %token ELIF   %token ELSE
+%token WHILE   %token BREAK  %token CONTINUE %token FOR %token DEL
+%token DEF     %token RETURN %token SIZEOF  %token MALLOC
+%token FREE    %token PASS
+%token AND     %token OR    %token NOT  %token IS  %token IN  
+
+%token PLUS    %token MINUS  %token MULT %token DIV %token MOD
+%token EXP     %token ARROW   %token EQ_COMPARISON
+%token NEQ     %token LT       %token GT      %token LEQ
+%token GEQ     %token Bit_And   %token NOT
+%token LPAREN   %token RPAREN   %token LBRACKET   %token RBRACKET
+%token LBRACE  %token RBRACE   %token DOT        %token COMMA
+%token COLON    %token SEMI     %token EXCLAMATION   %token ASSIG    
 
 %start program
 %type <Ast.program> program
 %left OR
 %left AND
-%left EQ NEQ
-%left EQ_COMPARISON NOT_EQ
-%left LT GT
+%left IN NOT LT LEQ GT GEQ NEQ EQ
 %left PLUS MINUS
 %left MULT DIV
-%right NOT Bit_And
+%right EXCLAMATION Bit_And
+%right ASSIG EXP
+%left DOT LBRACKET
+%left LPAREN
 
 %%
-
 /* add function declarations*/
 /* Returns List of Declarations */
 program:
@@ -56,10 +56,13 @@ vdecl:
 
 typ:
     INT   { Int   }
-  | BOOL  { Bool  }
   | FLOAT  { Float }
   | STRING { String }
+  | BOOL {Bool}
   | NONE { None }
+  | POINTER  typ {Pointer($2)}  
+
+
 
 /* fdecl 
 def main(x: int, y: int) -> None:
@@ -112,13 +115,13 @@ expr:
   | expr MULT expr   { Binop($1, Mult,   $3)   }
   | expr DIV expr    { Binop($1, Div,   $3)   }
   | expr EQ_COMPARISON expr { Binop($1, Eq_Compar, $3)   }
-  | expr NOT_EQ    expr { Binop($1, Neq, $3)     }
+  | expr NEQ   expr { Binop($1, Neq, $3)     }
   | expr LT     expr { Binop($1, Less,  $3)   }
   | expr GT     expr { Binop($1, Greater,  $3)   }
   | expr AND    expr { Binop($1, And,   $3)   }
   | expr OR     expr { Binop($1, Or,    $3)   }
   | NOT expr         { Unop(Not, $2)          }
-  | ID EQ expr   { Assign($1, $3)         }
+  | expr EQ expr   { Assign($1, $3)         }
   | LPAREN expr RPAREN { $2                   }
   | ID COLON typ EQ expr { VariableInit($1, $3, $5) } /* Variable Declaration */
   /* call */

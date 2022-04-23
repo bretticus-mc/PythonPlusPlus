@@ -1,4 +1,4 @@
-type op = Add | Sub | Mult | Div | Equal | Neq | Less | Leq | Geq | LeqGreater | Greater |And | Or | Eq_Compar | Bit_And
+type op = Add | Sub | Mult | Div | Equal | Neq | Less | Leq | Geq | Greater |And | Or | Eq_Compar | Bit_And
 
 type uop = Neg | Not 
 
@@ -6,7 +6,7 @@ type typ = Int | Bool | Float | String | None | Pointer of typ
 
 
 
-(* Defining what expressions can be *)
+(* Defining what expressions can be *) 
 type expr =
     Literal of int
   | FloatLit of string
@@ -31,9 +31,10 @@ type stmt =
   | Expr of expr
   | If of expr * stmt * stmt
   | While of expr * stmt
-  (* | For of expr * expr * expr * stmt *)
+  | For of expr * stmt 
   (* return *)
   | Return of expr
+ 
 
 
 (* x: int *)
@@ -65,6 +66,8 @@ let string_of_op = function
   | Eq_Compar -> "=="
   | Neq -> "!="
   | Less -> "<"
+  | Leq -> "<="
+  | Geq -> ">="
   | Greater -> ">"
   | And -> "and"
   | Or -> "or"
@@ -76,8 +79,8 @@ let rec string_of_typ = function
   | Float -> "float"
   | String -> "String"
   | None -> "None"
-  | Pointer t -> string_of_typ t ^ "*"
- 
+  | Pointer t -> "*"^string_of_typ t 
+
 
   let string_of_uop = function
     Neg -> "-"
@@ -101,7 +104,7 @@ let rec string_of_expr = function
   | Subscript (e, s) -> string_of_expr e ^ "[" ^ string_of_expr s ^ "]"
   | Refer s -> "&" ^ s
   | Deref e -> "*" ^ string_of_expr e
-  | Noexpr -> ""
+  | Noexpr -> " "
 
 let rec string_of_stmt = function
     Block(stmts) ->
@@ -111,6 +114,7 @@ let rec string_of_stmt = function
   | If(e, s1, s2) ->  "if (" ^ string_of_expr e ^ ")\n" ^
                       string_of_stmt s1 ^ "else\n" ^ string_of_stmt s2
   | While(e, s) -> "while (" ^ string_of_expr e ^ ") " ^ string_of_stmt s
+  | For(i,e) -> "for"^ string_of_expr i ^"in"^ string_of_stmt e  ^ ":"
 
 
 

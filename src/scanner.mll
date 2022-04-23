@@ -16,6 +16,8 @@
 	let indent_levels = Stack.create()
 	let () = Stack.push 0 indent_levels; ()
 	(* let scan_queue = Queue.create() *)
+
+	
 }
 
 (* 
@@ -42,44 +44,26 @@ rule scan_token = parse
 	| ")" { RPAREN }
 	| "{" { LBRACE }
 	| "}" { RBRACE }
+	| "["  {LBRACKET}
+	| "]"  {RBRACKET}
 	| "," { COMMA }
 	| "." { DOT }
 	| ":" { COLON }
 	| ";" { SEMI }
-	| "=" { EQ }
+	| "=" { ASSIG}
 	| "%" { MOD }
 	| "+" { PLUS }
 	| "-" { MINUS }
 	| "*" { MULT }
 	| "/" { DIV }
-	| "+=" { PLUS_EQ }
-	| "-=" { MINUS_EQ }
-	| "*=" { MULT_EQ }
-	| "/=" { DIV_EQ }
 	| "<" { LT }
 	| ">" { GT }
 	| "->" { ARROW }
-	| "and" { AND }
-	| "or" { OR }
-	| "not" { NOT }
+	| "**" {EXP}
 	| "!" { EXCLAMATION }
 	| "==" { EQ_COMPARISON }
-	| "!=" { NOT_EQ }
-	| "True" { BLIT(true)  }
-	| "False" { BLIT(false) }
+	| "!=" { NEQ}
 	| "&" {Bit_And}
-	| "return" { RETURN }
-	| "def" { DEF }
-	| "if" { IF }
-	| "else" { ELSE }
-	| "for" { FOR }
-	| "while" { WHILE }
-	| "in" { IN }
-	| "int" { INT }
-	| "String" { STRING }
-	| "None" { NONE }
-	| "return" { RETURN }
-	| "float" { FLOAT }
 	| "#" { read_single_line_comment lexbuf }
 	| "\"\"\"" { read_multi_line_comment lexbuf }
 	| digit+ as lem  { INT_LITERAL(int_of_string lem) }
