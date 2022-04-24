@@ -20,7 +20,7 @@ type sstmt =
     SBlock of sstmt list
   | SExpr of sexpr
   | SIf of sexpr * sstmt * sstmt
-  | SWhile of sexpr * sstmt
+  | SWhile of sexpr * sstmt list
   (* return *)
   | SReturn of sexpr
 
@@ -62,7 +62,7 @@ let rec string_of_sstmt = function
   | SReturn(expr) -> "SReturn: return " ^ string_of_sexpr expr ^ "\n"
   | SIf(e, s1, s2) ->  "SIf: if (" ^ string_of_sexpr e ^ ")\n" ^
                        string_of_sstmt s1 ^ "else\n" ^ string_of_sstmt s2
-  | SWhile(e, s) -> "Swhile: while " ^ string_of_sexpr e ^ ": " ^ string_of_sstmt s ^ "End of While Loop"
+  | SWhile(e, stmts) -> "Swhile: while " ^ string_of_sexpr e ^ ": " ^ "\n" ^ String.concat "" (List.map string_of_sstmt stmts) ^ "\n" ^ "End of While Loop"
 
 let string_of_sfdecl fdecl =
   "def " ^ fdecl.sfname ^ "(" ^ 

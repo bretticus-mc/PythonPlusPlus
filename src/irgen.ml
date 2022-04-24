@@ -155,7 +155,7 @@ in
       let bool_val = build_expr curr_symbol_table while_builder predicate in
 
       let body_bb = L.append_block context "while_body" the_function in
-      add_terminal (build_stmt the_function curr_symbol_table (L.builder_at_end context body_bb) body) build_br_while;
+      add_terminal (List.fold_left (build_stmt the_function curr_symbol_table) (L.builder_at_end context body_bb) body) build_br_while;
 
       let end_bb = L.append_block context "while_end" the_function in
 

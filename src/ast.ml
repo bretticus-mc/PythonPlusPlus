@@ -21,7 +21,7 @@ type stmt =
     Block of stmt list
   | Expr of expr
   | If of expr * stmt * stmt
-  | While of expr * stmt
+  | While of expr * stmt list
   (* | For of expr * expr * expr * stmt *)
   (* return *)
   | Return of expr
@@ -88,7 +88,7 @@ let rec string_of_stmt = function
   | Return(expr) -> "return " ^ string_of_expr expr ^ "\n"
   | If(e, s1, s2) ->  "if (" ^ string_of_expr e ^ ")\n" ^
                       string_of_stmt s1 ^ "else\n" ^ string_of_stmt s2
-  | While(e, s) -> "while (" ^ string_of_expr e ^ ") " ^ string_of_stmt s
+  | While(e, stmts) -> "while (" ^ string_of_expr e ^ ") " ^ "\n" ^ String.concat "" (List.map string_of_stmt stmts) ^ "\n"
 
 
 

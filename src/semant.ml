@@ -151,7 +151,7 @@ and check_top_stmt curr_symbol_table = function
     | If(e, st1, st2) ->
       SIf(check_bool_expr curr_symbol_table e, check_top_stmt curr_symbol_table st1, check_top_stmt curr_symbol_table st2)
     | While(e, st) ->
-      SWhile(check_bool_expr curr_symbol_table e, check_top_stmt curr_symbol_table st)
+      SWhile(check_bool_expr curr_symbol_table e, check_stmt_list curr_symbol_table st)
     | Return e ->
       let (t, e') = check_expr curr_symbol_table e in
       SReturn (t, e')
