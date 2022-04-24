@@ -58,7 +58,7 @@ let newline = '\r' | '\n' | "\r\n"
 
 rule scan_token = parse
 	| [' ' '\r' ] {scan_token lexbuf }
-	| ['\n']+['\t']* {
+	| ['\n']+['\t' ' ']* {
 		let curr_indent_level = count_whitespace (Lexing.lexeme lexbuf) in
 		let prev_indent_level = Stack.top indention_stack in
 		if curr_indent_level > prev_indent_level then
@@ -122,7 +122,6 @@ rule scan_token = parse
 	| '"'['a'-'z' 'A'-'Z' ' ']*'"' as lem {STRING_LITERAL(lem)}
 	| flt as lem { FLOAT_LITERAL(lem)}
 	| letter (digit | letter | '_')* as lem { ID(lem) }
-	(*| ['\n']  { NEWLINE } *)
 	| eof { EOF }
 	| _ as char { raise (Failure("illegal character " ^ Char.escaped char)) }
 
