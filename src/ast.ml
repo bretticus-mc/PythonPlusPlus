@@ -20,7 +20,7 @@ type expr =
 type stmt =
     Block of stmt list
   | Expr of expr
-  | If of expr * stmt * stmt
+  | If of expr * stmt list * stmt list
   | While of expr * stmt list
   (* | For of expr * expr * expr * stmt *)
   (* return *)
@@ -86,8 +86,8 @@ let rec string_of_stmt = function
     "{\n" ^ String.concat "" (List.map string_of_stmt stmts) ^ "}\n"
   | Expr(expr) -> string_of_expr expr ^ "\n"
   | Return(expr) -> "return " ^ string_of_expr expr ^ "\n"
-  | If(e, s1, s2) ->  "if (" ^ string_of_expr e ^ ")\n" ^
-                      string_of_stmt s1 ^ "else\n" ^ string_of_stmt s2
+  | If(e, stmt1, stmt2) ->  "if: (" ^ string_of_expr e ^ ")\n" ^
+        String.concat "" (List.map string_of_stmt stmt1) ^ "else:\n" ^ String.concat "" (List.map string_of_stmt stmt2)
   | While(e, stmts) -> "while (" ^ string_of_expr e ^ ") " ^ "\n" ^ String.concat "" (List.map string_of_stmt stmts) ^ "\n"
 
 

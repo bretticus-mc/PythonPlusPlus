@@ -135,9 +135,9 @@ in
       let bool_val = build_expr curr_symbol_table builder predicate in
 
       let then_bb = L.append_block context "then" the_function in
-      ignore (build_stmt the_function curr_symbol_table (L.builder_at_end context then_bb) then_stmt);
+      ignore (List.fold_left (build_stmt the_function curr_symbol_table) (L.builder_at_end context then_bb) then_stmt);
       let else_bb = L.append_block context "else" the_function in
-      ignore (build_stmt the_function curr_symbol_table (L.builder_at_end context else_bb) else_stmt);
+      ignore (List.fold_left (build_stmt the_function curr_symbol_table) (L.builder_at_end context else_bb) else_stmt);
 
       let end_bb = L.append_block context "if_end" the_function in
       let build_br_end = L.build_br end_bb in (* partial function *)

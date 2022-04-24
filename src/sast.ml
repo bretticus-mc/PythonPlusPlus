@@ -19,7 +19,7 @@ and sx =
 type sstmt =
     SBlock of sstmt list
   | SExpr of sexpr
-  | SIf of sexpr * sstmt * sstmt
+  | SIf of sexpr * sstmt list * sstmt list
   | SWhile of sexpr * sstmt list
   (* return *)
   | SReturn of sexpr
@@ -60,8 +60,8 @@ let rec string_of_sstmt = function
     "SBlock: {\n" ^ String.concat "" (List.map string_of_sstmt stmts) ^ "}\n"
   | SExpr(expr) -> "SExpr: "^ string_of_sexpr expr ^ "\n"
   | SReturn(expr) -> "SReturn: return " ^ string_of_sexpr expr ^ "\n"
-  | SIf(e, s1, s2) ->  "SIf: if (" ^ string_of_sexpr e ^ ")\n" ^
-                       string_of_sstmt s1 ^ "else\n" ^ string_of_sstmt s2
+  | SIf(e, stmt1, stmt2) ->  "SIf: if (" ^ string_of_sexpr e ^ ")\n" ^
+          String.concat "" (List.map string_of_sstmt stmt1) ^ "else\n" ^ String.concat "" (List.map string_of_sstmt stmt2)
   | SWhile(e, stmts) -> "Swhile: while " ^ string_of_sexpr e ^ ": " ^ "\n" ^ String.concat "" (List.map string_of_sstmt stmts) ^ "\n" ^ "End of While Loop"
 
 let string_of_sfdecl fdecl =
@@ -78,10 +78,3 @@ let string_of_scode code = match code with
 let string_of_sprogram (code) =
   "\n\nSementically checked program: \n\n" ^
   String.concat "" (List.map string_of_scode code)
-
-(* 
-let string_of_sprogram (code) =
-  "\n\nSementically checked program: \n\n" ^
-  String.concat "" (List.map string_of_vdecl vars) ^ "\n" ^
-  String.concat "\n" (List.map string_of_sfdecl funcs)
-*)
