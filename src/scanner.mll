@@ -19,11 +19,11 @@
 
 	let rec enqueue_dedents queue prev_indent_level curr_indent_level = 
 		if prev_indent_level > curr_indent_level then
-			Queue.add DEDENT queue_of_tokens; enqueue_dedents queue (prev_indent_level - 4) curr_indent_level
+			(Queue.add DEDENT queue_of_tokens; enqueue_dedents queue (prev_indent_level - 4) curr_indent_level)
 
 	let rec enqueue_indents queue prev_indent_level curr_indent_level = 
 		if prev_indent_level < curr_indent_level then
-			Queue.add INDENT queue_of_tokens; enqueue_indents queue (prev_indent_level + 4) curr_indent_level
+			(Queue.add INDENT queue_of_tokens; enqueue_indents queue (prev_indent_level + 4) curr_indent_level)
 
 	let count_whitespace str = 
 		let parsed_string = List.init (String.length str) (String.get str) in
@@ -58,19 +58,21 @@ let newline = '\r' | '\n' | "\r\n"
 
 rule scan_token = parse
 	| [' ' '\r' ] {scan_token lexbuf }
-	| ['\t']+ {
+	| ['\n']+['\t']* {
 		let curr_indent_level = count_whitespace (Lexing.lexeme lexbuf) in
 		let prev_indent_level = Stack.top indention_stack in
 		if curr_indent_level > prev_indent_level then
-			(ignore(enqueue_indents queue_of_tokens prev_indent_level curr_indent_level);
+			((ignore(enqueue_indents queue_of_tokens prev_indent_level curr_indent_level);
 			Stack.push curr_indent_level indention_stack;
+
+			);
 			NEWLINE
 			)
 		else if curr_indent_level = prev_indent_level then 
-			(scan_token lexbuf )
+			NEWLINE
 		else
-			(ignore(enqueue_dedents queue_of_tokens prev_indent_level curr_indent_level);
-			Stack.push curr_indent_level indention_stack;
+			(ignore(enqueue_dedents queue_of_tokens prev_indent_level curr_indent_level;
+			Stack.push curr_indent_level indention_stack); 
 			NEWLINE)
 	}
 	| "(" { LPAREN }
@@ -120,7 +122,7 @@ rule scan_token = parse
 	| '"'['a'-'z' 'A'-'Z' ' ']*'"' as lem {STRING_LITERAL(lem)}
 	| flt as lem { FLOAT_LITERAL(lem)}
 	| letter (digit | letter | '_')* as lem { ID(lem) }
-	| ['\n']  { NEWLINE }
+	(*| ['\n']  { NEWLINE } *)
 	| eof { EOF }
 	| _ as char { raise (Failure("illegal character " ^ Char.escaped char)) }
 
@@ -136,17 +138,8 @@ rule scan_token = parse
 		| _ { read_multi_line_comment lexbuf }
 
 	{
-		let rec read lexbuf = 
-			let return_token = 
-				if Queue.is_empty queue_of_tokens then
-					scan_token lexbuf
-				else Queue.take queue_of_tokens
-			in
-			match return_token with
-				NEWLINE -> if !last_token_newline then
-					scan_token lexbuf
-					else (
-						last_token_newline := true; NEWLINE
-					)
-				| _ -> last_token_newline := false; return_token
+		let read lexbuf = 
+			if Queue.is_empty queue_of_tokens then
+				scan_token lexbuf
+			else Queue.take queue_of_tokens
 	}
