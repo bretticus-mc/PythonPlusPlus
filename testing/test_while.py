@@ -1,10 +1,6 @@
-def test_while (a: int, b: int) -> int:
-	# fails because while loop is only taking one statement
-  while (a < b):
-	print(a)
+a: int = 1
+b: int = 3
+while (a < b):
 	a = a + 1
-  return a
-
-x: int = 1
-y: int = 3
-test_while(1,3)
+print(a)
+print(b)
