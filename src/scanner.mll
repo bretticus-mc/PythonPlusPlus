@@ -68,8 +68,12 @@ rule scan_token = parse
 			);
 			NEWLINE
 			)
-		else if curr_indent_level = prev_indent_level then 
-			NEWLINE
+		else if curr_indent_level = prev_indent_level then
+			(* If no INDENT or DEDENT, generate NEWLINE token if not at the start of line *)
+			if (lexbuf.lex_start_p.pos_cnum - lexbuf.lex_start_p.pos_bol) = 0 then
+				(scan_token lexbuf)
+			else NEWLINE
+			
 		else
 			(ignore(enqueue_dedents queue_of_tokens prev_indent_level curr_indent_level;
 			Stack.push curr_indent_level indention_stack); 
