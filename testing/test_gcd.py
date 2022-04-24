@@ -1,11 +1,11 @@
 # The GCD algorithm in PythonPP
 def gcd (a: int, b: int) -> int:
-  while (a != b):
-    if (b < a):
-		a = a - b
-    else:
-		b = b - a
-  return a
+    while (a != b):
+		if (b < a):
+			a = a - b
+		else:
+			b = b - a
+	return a
 
 a: int = 18
 b: int = 9

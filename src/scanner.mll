@@ -12,12 +12,31 @@
 				pos_lnum = pos.pos_lnum + 1
 			}
 
-	
-	let indent_levels = Stack.create()
-	let () = Stack.push 0 indent_levels; ()
-	(* let scan_queue = Queue.create() *)
-}
+	(* Create stacks and queue *)
+	let indention_stack = Stack.create ()
+	let () = Stack.push 0 indention_stack
+	let queue_of_tokens = Queue.create ()
 
+	let rec enqueue_dedents queue prev_indent_level curr_indent_level = 
+		if prev_indent_level > curr_indent_level then
+			(Queue.add DEDENT queue_of_tokens; enqueue_dedents queue (prev_indent_level - 4) curr_indent_level)
+
+	let rec enqueue_indents queue prev_indent_level curr_indent_level = 
+		if prev_indent_level < curr_indent_level then
+			(Queue.add INDENT queue_of_tokens; enqueue_indents queue (prev_indent_level + 4) curr_indent_level)
+
+	let count_whitespace str = 
+		let parsed_string = List.init (String.length str) (String.get str) in
+		let calculate_space accumulator = function
+			'\t' -> accumulator + 4
+			| ' ' -> accumulator + 1
+			| _ -> accumulator
+		in
+		List.fold_left calculate_space 0 parsed_string
+	
+	let last_token_newline = ref true
+
+}
 (* 
 	OCamllex Regex Syntax:
 	https://ocaml.org/manual/lexyacc.html#ss:ocamllex-regexp 
@@ -29,6 +48,7 @@ let flt = digit*'.'digit+
 let string_literal = ('"'[' '-'~']*'"')
 
 let whitespace = [' ' '\t']+
+let comment_after_whitespace = [' ' '\t']+'#'
 let newline = '\r' | '\n' | "\r\n"
 
 (* 
@@ -37,7 +57,28 @@ let newline = '\r' | '\n' | "\r\n"
 *)
 
 rule scan_token = parse
-	| [' ' '\t' '\r' ] {scan_token lexbuf } (* removed \n *)
+	| [' ' '\r' ] {scan_token lexbuf }
+	| ['\n']+['\t' ' ']* {
+		let curr_indent_level = count_whitespace (Lexing.lexeme lexbuf) in
+		let prev_indent_level = Stack.top indention_stack in
+		if curr_indent_level > prev_indent_level then
+			((ignore(enqueue_indents queue_of_tokens prev_indent_level curr_indent_level);
+			Stack.push curr_indent_level indention_stack;
+
+			);
+			NEWLINE
+			)
+		else if curr_indent_level = prev_indent_level then
+			(* If no INDENT or DEDENT, generate NEWLINE token if not at the start of line *)
+			if (lexbuf.lex_start_p.pos_cnum - lexbuf.lex_start_p.pos_bol) = 0 then
+				(scan_token lexbuf)
+			else NEWLINE
+			
+		else
+			(ignore(enqueue_dedents queue_of_tokens prev_indent_level curr_indent_level;
+			Stack.push curr_indent_level indention_stack); 
+			NEWLINE)
+	}
 	| "(" { LPAREN }
 	| ")" { RPAREN }
 	| "{" { LBRACE }
@@ -85,7 +126,6 @@ rule scan_token = parse
 	| '"'['a'-'z' 'A'-'Z' ' ']*'"' as lem {STRING_LITERAL(lem)}
 	| flt as lem { FLOAT_LITERAL(lem)}
 	| letter (digit | letter | '_')* as lem { ID(lem) }
-	| ['\n']  { NEWLINE }
 	| eof { EOF }
 	| _ as char { raise (Failure("illegal character " ^ Char.escaped char)) }
 
@@ -99,7 +139,10 @@ rule scan_token = parse
 		| newline { next_line lexbuf; read_multi_line_comment lexbuf }
 		| eof { raise (Failure("Unexpected EOF"))}
 		| _ { read_multi_line_comment lexbuf }
-	
 
-
-
+	{
+		let read lexbuf = 
+			if Queue.is_empty queue_of_tokens then
+				scan_token lexbuf
+			else Queue.take queue_of_tokens
+	}

@@ -6,14 +6,14 @@ open Ast
 %token INT FLOAT BOOL STRING
 
 /* Operators */
-%token ASSIGN PLUS MINUS MULT DIV 
+%token PLUS MINUS MULT DIV 
 
 /* Comparators */
 %token EQ NOT_EQ LT GT AND OR NOT DOT PLUS_EQ MINUS_EQ MULT_EQ DIV_EQ EXCLAMATION EQ_COMPARISON NOTEQUAL IN COLON
 
 %token IF ELSE WHILE FOR DEF RETURN COMMA NEWLINE
 %token SEMI LPAREN RPAREN LBRACE RBRACE
-%token TRUE FALSE NONE
+%token TRUE FALSE NONE DEDENT INDENT
 %token MOD RANGLE ARROW
 
 %token <string> FLOAT_LITERAL
@@ -63,13 +63,13 @@ typ:
 def main(x: int, y: int) -> None:
 */
 fdecl:
-  DEF ID LPAREN formals_opt RPAREN ARROW typ COLON NEWLINE stmt_list NEWLINE
+  DEF ID LPAREN formals_opt RPAREN ARROW typ COLON NEWLINE INDENT stmt_list DEDENT 
   {
     {
       rtyp= $7;
       fname= $2;
       formals= $4; 
-      body= $10 
+      body= $11
     }
   }
 
@@ -92,8 +92,8 @@ stmt:
   | expr EOF                                { Expr $1 }
   | LBRACE stmt_list RBRACE                 { Block $2 }
   /* if (condition): /n stmt else /n stmt */
-  | IF LPAREN expr RPAREN COLON NEWLINE stmt ELSE COLON NEWLINE stmt    { If($3, $7, $11) }
-  | WHILE LPAREN expr RPAREN COLON NEWLINE stmt { While ($3, $7)  }
+  | IF LPAREN expr RPAREN COLON NEWLINE INDENT stmt_list DEDENT ELSE COLON NEWLINE INDENT stmt_list DEDENT   { If($3, $8, $14) }
+  | WHILE LPAREN expr RPAREN COLON NEWLINE INDENT stmt_list DEDENT { While ($3, $8)  }
   /* return */
   | RETURN expr NEWLINE                       { Return $2   }
   | RETURN expr EOF                        { Return $2      } /* Return the Expression */
