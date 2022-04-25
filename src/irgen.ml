@@ -29,10 +29,11 @@ let translate (code: Sast.scode list) =
   let the_module = L.create_module context "PythonPP" in
 
   (* Get types from the context *)
-  let i32_t      = L.i32_type    context
-  and i8_t       = L.i8_type     context
-  and i1_t       = L.i1_type     context 
-  and float_t    = L.double_type context
+  let i32_t      = L.i32_type    context (* 32-bit int type *)
+  and i8_t       = L.i8_type     context (* Characters *)
+  and i1_t       = L.i1_type     context (* Boolean type *)
+  and float_t    = L.double_type context (* Double/Float type *)
+  and string_t   = L.pointer_type   (L.i8_type context) (* String type *)
   and none_t     = L.void_type   context in 
   let vpoint_t   = L.pointer_type i8_t 
 in
