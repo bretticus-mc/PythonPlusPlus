@@ -44,6 +44,7 @@ in
     | A.Bool  -> i1_t
     | A.None  -> none_t
     | A.Float -> float_t
+    | A.String -> string_t
     | A.Pointer p ->
         if p == A.None then vpoint_t else L.pointer_type (ltype_of_typ p)
   in
