@@ -158,7 +158,7 @@ in
           | A.Div     -> L.build_sdiv
           | A.And     -> L.build_and
           | A.Or      -> L.build_or
-          | A.Eq_Compar -> L.build_icmp L.Icmp.Eq_Compar
+          | A.Eq_Compar -> L.build_icmp L.Icmp.Eq (* No binop version on LLVM *)
           | A.Equal   -> L.build_icmp L.Icmp.Eq
           | A.Neq     -> L.build_icmp L.Icmp.Ne
           | A.Less    -> L.build_icmp L.Icmp.Slt
