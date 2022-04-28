@@ -194,7 +194,9 @@ and check_top_stmt curr_symbol_table = function
       Block sl -> SBlock (check_stmt_list curr_symbol_table sl)
     | Expr e -> SExpr (check_expr curr_symbol_table e)
     | If(e, st1, st2) ->
-      SIf(check_bool_expr curr_symbol_table e, check_top_stmt curr_symbol_table st1, check_top_stmt curr_symbol_table st2)
+        SIf(check_bool_expr curr_symbol_table e, check_top_stmt curr_symbol_table st1, check_top_stmt curr_symbol_table st2)
+    | For(e, st) ->
+        SFor(check_expr curr_symbol_table e, check_top_stmt curr_symbol_table st)
     | While(e, st) ->
       SWhile(check_bool_expr curr_symbol_table e, check_top_stmt curr_symbol_table st)
     | Return e ->

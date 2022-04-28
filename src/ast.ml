@@ -114,7 +114,7 @@ let rec string_of_stmt = function
   | If(e, s1, s2) ->  "if (" ^ string_of_expr e ^ ")\n" ^
                       string_of_stmt s1 ^ "else\n" ^ string_of_stmt s2
   | While(e, s) -> "while (" ^ string_of_expr e ^ ") " ^ string_of_stmt s
-  | For(i,e) -> "for"^ string_of_expr i ^"in"^ string_of_stmt e  ^ ":"
+  | For(e,s) -> "for"^ string_of_expr e ^"in"^ string_of_stmt s  ^ ":"
 
 
 
