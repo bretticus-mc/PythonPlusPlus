@@ -42,7 +42,7 @@ in
   let rec ltype_of_typ = function
       A.Int   -> i32_t
     | A.Bool  -> i1_t
-    | A.None  -> none_t
+    | A.None  -> none_t 
     | A.Float -> float_t
     | A.String -> string_t
     | A.Pointer p ->
@@ -91,6 +91,7 @@ in
      SLiteral i  -> L.const_int i32_t i
     | SBoolLit b  -> L.const_int i1_t (if b then 1 else 0)
     | SFloatLit l -> L.const_float_of_string float_t l
+    | SStringLit s -> L.build_global_stringptr s "str" build_expr
     | SNoexpr ->     L.const_int i32_t 0
     | SId s       -> L.build_load (lookup curr_symbol_table s) s builder
     (* special handling for deref expr, subscript expr, and malloc *)
