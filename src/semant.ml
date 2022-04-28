@@ -181,6 +181,8 @@ let rec check_expr symbol_table = function
           let t, e' = check_expr symbol_table e in
           if is_pointer t then (deref t, SDeref (t, e'))
           else raise (Failure "cannot dereference expression")
+      | Noexpr -> (None,SNoexpr)
+
   in
 
 let rec check_stmt_list curr_symbol_table  = function
