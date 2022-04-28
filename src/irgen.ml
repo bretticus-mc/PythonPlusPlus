@@ -91,7 +91,7 @@ in
      SLiteral i  -> L.const_int i32_t i
     | SBoolLit b  -> L.const_int i1_t (if b then 1 else 0)
     | SFloatLit l -> L.const_float_of_string float_t l
-    | SStringLit s -> L.build_global_stringptr s "str" build_expr
+    | SStringLit s -> L.build_global_stringptr s "str" builder
     | SNoexpr ->     L.const_int i32_t 0
     | SId s       -> L.build_load (lookup curr_symbol_table s) s builder
     (* special handling for deref expr, subscript expr, and malloc *)
