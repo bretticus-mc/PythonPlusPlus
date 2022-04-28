@@ -134,7 +134,7 @@ let rec check_expr symbol_table = function
         (* Determine expression type based on operator and operand types *)
         let t = 
         match op with
-          | Eq_compar when t1 = t2 -> Boolean
+          | Eq_Compar when t1 = t2 -> Boolean
           | Add | Sub | Div | Mult when t1 = Int -> Int
           | Add | Sub | Div | Mult when t1 = Float -> Float
           | (Equal | Neq) -> Bool

@@ -136,7 +136,8 @@ in
 	    A.Add     -> L.build_fadd
 	  | A.Sub     -> L.build_fsub
 	  | A.Mult    -> L.build_fmul
-	  | A.Div     -> L.build_fdiv 
+	  | A.Div     -> L.build_fdiv
+    | A.Eq_Compar -> L.build_fcmp L.Fcmp.Oeq (* Not sure on this *)
 	  | A.Equal   -> L.build_fcmp L.Fcmp.Oeq
 	  | A.Neq     -> L.build_fcmp L.Fcmp.One
 	  | A.Less    -> L.build_fcmp L.Fcmp.Olt
@@ -157,6 +158,7 @@ in
           | A.Div     -> L.build_sdiv
           | A.And     -> L.build_and
           | A.Or      -> L.build_or
+          | A.Eq_Compar -> L.build_icmp L.Icmp.Eq_Compar
           | A.Equal   -> L.build_icmp L.Icmp.Eq
           | A.Neq     -> L.build_icmp L.Icmp.Ne
           | A.Less    -> L.build_icmp L.Icmp.Slt
