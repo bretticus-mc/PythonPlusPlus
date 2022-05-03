@@ -47,4 +47,9 @@ clean :
 	rm -rf \
 	*.cmi *.cmo parser.ml parser.mli parser.output scanner.ml \
 		repl.out repl *.out __pycache__ _build pythonpp.native \
-	*.ll *.exe *.s *.o testall.log
+	*.ll *.exe *.s *.o *.out *.log *.intermediate \
+	../testing/*.ll ../testing/*.exe ../testing/*.s ../testing/*.o \
+	../testing/test_all.log ../testing/*.diff ../testing/*.intermediate
+
+test:
+	../testing/test_all.sh

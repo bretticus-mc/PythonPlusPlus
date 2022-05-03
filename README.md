@@ -14,3 +14,8 @@ ocamlbuild -pkgs llvm pythonpp.native
 ```
 lli example.out
 ```
+
+### Run tests
+```
+make test
+```

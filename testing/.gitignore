@@ -1,0 +1,7 @@
+*.s
+*.exe
+*.o
+*.diff
+*.log
+*.a
+*.intermediate
