@@ -92,9 +92,13 @@ let rec check_expr symbol_table = function
     | BoolLit l -> (Bool, SBoolLit l)
     | StringLit l -> (String, SStringLit l)
     | Id var -> (type_of_identifier symbol_table var, SId var)
-    | VariableInit(var, t, e) -> (* var = Variable Name, t = Type, e = Expression *) 
-        ignore(Hashtbl.add symbol_table var t);  (* Add Variable to Hashtable *)
-      (t, SVariableInit(var, t, (check_expr symbol_table e))) (* Check if it is added properly *)
+    | VariableInit(var_name, var_type, e) as ex -> (* var = Variable Name, t = Type, e = Expression *)
+        let (right_hand_type, right_hand_expr) =  check_expr symbol_table e in
+        let err = "illegal assignment " ^ string_of_typ var_type ^ " = " ^
+        string_of_typ right_hand_type ^ " in " ^ string_of_expr ex in
+        let _ = check_assign var_type right_hand_type err in
+        ignore(Hashtbl.add symbol_table var_name var_type);  (* Add Variable to Hashtable *)
+      (var_type, SVariableInit(var_name, var_type, (check_expr symbol_table e))) (* Check if it is added properly *)
     | Assign(var, e) as ex ->
       let lt = type_of_identifier symbol_table var
       and (rt, e') = check_expr symbol_table e in
@@ -152,9 +156,7 @@ and check_top_stmt curr_symbol_table = function
       SIf(check_bool_expr curr_symbol_table e, check_stmt_list curr_symbol_table st1, check_stmt_list curr_symbol_table st2)
     | While(e, st) ->
       SWhile(check_bool_expr curr_symbol_table e, check_stmt_list curr_symbol_table st)
-    | Return e ->
-      let (t, e') = check_expr curr_symbol_table e in
-      SReturn (t, e')
+    | Return e -> raise (Failure ("return outside function" ))
   and 
   check_bool_expr curr_symbol_table e =
     let (t, e') = check_expr curr_symbol_table e in
@@ -182,12 +184,21 @@ and check_top_stmt curr_symbol_table = function
         curr_symbol_table (func.formals)
     in
     *)
+    let rec check_func_statements = function
+      [] -> []
+    | Return e :: sl -> let (t, e') = check_expr local_symbol_table e in
+      if t = func.rtyp then SReturn (t, e') :: check_func_statements sl
+      else raise (
+          Failure ("return gives " ^ string_of_typ t ^ " expected " ^
+                  string_of_typ func.rtyp ^ " in " ^ string_of_expr e))
+    | s :: sl -> check_top_stmt local_symbol_table s :: check_func_statements sl
+    in
 
      (* body of check_func *)
     { srtyp = func.rtyp;
       sfname = func.fname;
       sformals = func.formals;
-      sbody = check_stmt_list local_symbol_table func.body
+      sbody = check_func_statements func.body
     }
   in
   let check_code curr_symbol_table = function
