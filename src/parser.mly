@@ -9,32 +9,34 @@ open Ast
 %token <string> STRING_LITERAL
 
 %token NEWLINE %token %token EOF
-%token TRUE    %token FALSE  %token NONE
+%token TRUE    %token FALSE  %token NONE %token NULL 
 %token IF      %token ELIF   %token ELSE
 %token WHILE   %token BREAK  %token CONTINUE %token FOR %token DEL
-%token DEF     %token RETURN %token SIZEOF  %token MALLOC
-%token FREE    %token PASS
+%token DEF     %token RETURN %token SIZEOF  %token MALLOC %token NEW
+%token FREE    %token PASS   %token DEDENT    %token INDENT
 %token AND     %token OR    %token NOT  %token IS  %token IN  
 
 %token PLUS    %token MINUS  %token MULT %token DIV %token MOD
-%token EXP     %token ARROW   %token EQ_COMPARISON
-%token NEQ     %token LT       %token GT      %token LEQ
-%token GEQ     %token Bit_And   %token NOT
+%token EXP     %token ARROW   %token EQ_COMPARISON %token ALLOC
+%token NEQ     %token LT       %token GT      %token LEQ %token EQ
+%token GEQ     %token BIT_AND  %token NOT
 %token LPAREN   %token RPAREN   %token LBRACKET   %token RBRACKET
 %token LBRACE  %token RBRACE   %token DOT        %token COMMA
 %token COLON    %token SEMI     %token EXCLAMATION   %token ASSIG    
 
 %start program
 %type <Ast.program> program
-%left OR
-%left AND
-%left IN NOT LT LEQ GT GEQ NEQ EQ
-%left PLUS MINUS
-%left MULT DIV
-%right EXCLAMATION Bit_And
-%right ASSIG EXP
-%left DOT LBRACKET
+%right ASSIG
+%left  OR
+%left  AND
+%left  EQ NEQ
+%left  IN NOT LT LEQ GT GEQ 
+%left  PLUS MINUS
+%left  MULT DIV
+%left NOT BIT_AND
 %left LPAREN
+%left LBRACKET
+
 
 %%
 /* add function declarations*/
@@ -52,27 +54,28 @@ decls:
 
 /* Variable Declaraiton */
 vdecl:
-  ID COLON typ { ($1, $3) } /* x: int = 50 */
+  ID COLON LPAREN MULT typ RPAREN{ ($1, $5) } /* x: *int = 50 */ 
+
 
 typ:
-    INT   { Int   }
+    INT   { Int }
+  | BOOL {Bool}
   | FLOAT  { Float }
   | STRING { String }
-  | BOOL {Bool}
   | NONE { None }
-  | POINTER  typ {Pointer($2)}  
-
-
+  | typ MULT{Pointer($1)}
+  
 
 /* fdecl 
-def main(x: int, y: int) -> None:
+def main(x: *int, y: int) -> None:
 */
 fdecl:
   DEF ID LPAREN formals_opt RPAREN ARROW typ COLON NEWLINE stmt_list NEWLINE
   {
     {
-      rtyp= $7;
+     
       fname= $2;
+      rtyp= $7;
       formals= $4; 
       body= $10 
     }
@@ -99,6 +102,7 @@ stmt:
   /* if (condition): /n stmt else /n stmt */
   | IF LPAREN expr RPAREN COLON NEWLINE stmt ELSE COLON NEWLINE stmt    { If($3, $7, $11) }
   | WHILE LPAREN expr RPAREN COLON NEWLINE stmt { While ($3, $7)  }
+  | FOR expr IN stmt COLON NEWLINE stmt {For($2,$4, $7 )}
   /* return */
   | RETURN expr NEWLINE                       { Return $2   }
   | RETURN expr EOF                        { Return $2      } /* Return the Expression */
@@ -120,12 +124,16 @@ expr:
   | expr GT     expr { Binop($1, Greater,  $3)   }
   | expr AND    expr { Binop($1, And,   $3)   }
   | expr OR     expr { Binop($1, Or,    $3)   }
-  | NOT expr         { Unop(Not, $2)          }
-  | expr EQ expr   { Assign($1, $3)         }
-  | LPAREN expr RPAREN { $2                   }
-  | ID COLON typ EQ expr { VariableInit($1, $3, $5) } /* Variable Declaration */
+  | MINUS expr %prec Neg { Unop(Neg, $2)    }
+  | MULT expr %prec Neg { Deref $2 } 
+  | BIT_AND expr %prec  { Refer $2 }
+  | EXCLAMATION expr         { Unop(Not, $2) }
+  | expr LBRACKET expr RBRACKET {Subscript($1, $3)}
+  | expr EQ expr   { Assign($1, $3) }
+  | ID COLON MULT typ EQ expr { VariableInit($1, $4, $6) } /* Variable Declaration */ 
   /* call */
   | ID LPAREN args_opt RPAREN { Call ($1, $3)  } /* args_opt = List of Arguments */
+  | LPAREN expr RPAREN { $2}
 
 /* args_opt*/
 args_opt:
