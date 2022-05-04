@@ -41,8 +41,8 @@ let check (code) =
                                ("prints",Pointer(String), None);
                                ("malloc", Pointer(Int), Int);
                                ("malloc", Pointer(Int), None); 
-                               ("free", Pointer(None), None);
-                               ("new", Int,Int)] 
+                               ("free", Pointer(None), None)
+                               ] 
     (* Add the key: "print" and value: Function Definition *)
   in
 
@@ -105,7 +105,7 @@ let rec check_expr symbol_table = function
     | FloatLit l -> (Float, SFloatLit l)
     | BoolLit l -> (Bool, SBoolLit l)
     | StringLit l -> ( Pointer String , SStringLit l)
-    | New t -> (Int, SNew t )
+    | New(t) -> (Int, SNew t )
     | Null -> (Pointer None, SNull )
     | Noexpr -> (None, SNoexpr)
     | Id var -> (type_of_identifier symbol_table var, SId var)

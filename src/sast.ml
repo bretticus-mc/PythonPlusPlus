@@ -17,7 +17,6 @@ and sx =
   | SCast of typ * sexpr
   | SAlloc of string * typ 
   | SVariableInit of string * typ * sexpr
-  | SPointerInit of string * typ
   | SAssign of sexpr * sexpr
   (* call *)
   | SSubscript of sexpr * sexpr
@@ -71,7 +70,7 @@ let rec string_of_sexpr (t, e) =
         f ^ "(" ^ String.concat ", " (List.map string_of_sexpr el) ^ ")"
       | SCast(e,t) -> "st"
       | SSubscript (e, s) -> string_of_sexpr e ^ "[" ^ string_of_sexpr s ^ "]"
-      | SNew t ->  "new(" ^ string_of_typ t ^")"
+      | SNew(t) ->  "new(" ^ string_of_typ t ^ ")\n"
       | SRefer s -> "&" ^ s
       | SDeref e -> "*" ^ string_of_sexpr e
       | SNoexpr -> "" )

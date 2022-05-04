@@ -142,7 +142,7 @@ let rec string_of_expr = function
   | Subscript (e, s) -> string_of_expr e ^ "[" ^ string_of_expr s ^ "]"
   | Deref e ->  "*" ^ string_of_expr e 
   | Refer s -> "&"^ s 
-  | New t -> "new(" ^ string_of_typ t ^")"
+  | New(t) -> "new(" ^ string_of_typ t ^ ")\n"
   | Noexpr -> " "
 
 let rec string_of_stmt = function

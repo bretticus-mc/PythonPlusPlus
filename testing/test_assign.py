@@ -1,3 +1,5 @@
+
 x: int = 5
-x = 6
+x = new(7)
 print(x)
+

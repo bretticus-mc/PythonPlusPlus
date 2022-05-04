@@ -131,7 +131,6 @@ expr:
   | expr EQ expr   { Assign($1, $3) }
   | expr LBRACKET expr RBRACKET {Subscript($1, $3)}
   | ID LPAREN args_opt RPAREN { Call ($1, $3)  } /* args_opt = List of Arguments */
-  | NEW LPAREN typ RPAREN {New {$3}}
   | ID COLON MULT typ EQ expr { VariableInit($1, $4, $6) } /* Variable Declaration */ 
   /* call */
   | LPAREN expr RPAREN { $2}
