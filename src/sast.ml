@@ -33,7 +33,7 @@ type sstmt =
   | SReturn of sexpr
   | SIf of sexpr * sstmt * sstmt
   | SWhile of sexpr * sstmt
-  | SFor of sexpr * sstmt
+  | SFor of sexpr * sstmt *  sstmt
   (* return *)
 
 
@@ -83,7 +83,9 @@ let rec string_of_sstmt = function
   | SReturn(expr) -> "SReturn: return " ^ string_of_sexpr expr ^ "\n"
   | SIf(e, s1, s2) ->  "SIf: if (" ^ string_of_sexpr e ^ ")\n" ^
                        string_of_sstmt s1 ^ "else\n" ^ string_of_sstmt s2
-  | SFor(e, s) -> "Sfor: for " ^ string_of_sexpr e ^ "in" ^ string_of_sstmt s ^ ": " ^ "End of For Loop"
+  | SFor(i,e, s) -> "for"^ string_of_sexpr i ^"in"^ string_of_sstmt e ^ ":\n" ^
+                           string_of_sstmt s
+
   | SWhile(e, s) -> "Swhile: while " ^ string_of_sexpr e ^ ": " ^ string_of_sstmt s ^ "End of While Loop"
 let string_of_sfdecl fdecl =
   "def " ^ fdecl.sfname ^ "(" ^ 

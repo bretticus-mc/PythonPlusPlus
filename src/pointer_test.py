@@ -1,2 +1,5 @@
-x : *int = 5
+from ctypes import sizeof
+
+
+x : *int = sizeof(10)
 print(x)
