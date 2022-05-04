@@ -120,6 +120,7 @@ rule scan_token = parse
 	| "return" { RETURN }
 	| "float" { FLOAT }
 	| "sizeof" {SIZEOF}
+	| "new" {NEW}
 	| "#" { read_single_line_comment lexbuf }
 	| "\"\"\"" { read_multi_line_comment lexbuf }
 	| digit+ as lem  { INT_LITERAL(int_of_string lem) }

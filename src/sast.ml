@@ -23,7 +23,7 @@ and sx =
   | SSubscript of sexpr * sexpr
   | SRefer of string
   | SDeref of sexpr
-  | SSizeof of typ
+  | SNew of typ
   | SNoexpr
 
 
@@ -71,7 +71,7 @@ let rec string_of_sexpr (t, e) =
         f ^ "(" ^ String.concat ", " (List.map string_of_sexpr el) ^ ")"
       | SCast(e,t) -> "st"
       | SSubscript (e, s) -> string_of_sexpr e ^ "[" ^ string_of_sexpr s ^ "]"
-      | SSizeof t ->  "("^ string_of_typ t  ^ ")"
+      | SNew t ->  "new(" ^ string_of_typ t ^")"
       | SRefer s -> "&" ^ s
       | SDeref e -> "*" ^ string_of_sexpr e
       | SNoexpr -> "" )

@@ -105,7 +105,7 @@ let rec check_expr symbol_table = function
     | FloatLit l -> (Float, SFloatLit l)
     | BoolLit l -> (Bool, SBoolLit l)
     | StringLit l -> ( Pointer String , SStringLit l)
-    | Sizeof t -> (Int, SSizeof t )
+    | New t -> (Int, SNew t )
     | Null -> (Pointer None, SNull )
     | Noexpr -> (None, SNoexpr)
     | Id var -> (type_of_identifier symbol_table var, SId var)

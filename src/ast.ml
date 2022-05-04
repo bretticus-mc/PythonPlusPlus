@@ -41,7 +41,7 @@ type expr =
   | Deref of expr
   | Refer of string
   | Assign of expr * expr
-  | Sizeof of typ
+  | New of typ
   | Noexpr
   
 
@@ -142,7 +142,7 @@ let rec string_of_expr = function
   | Subscript (e, s) -> string_of_expr e ^ "[" ^ string_of_expr s ^ "]"
   | Deref e ->  "*" ^ string_of_expr e 
   | Refer s -> "&"^ s 
-  | Sizeof t -> "sizeof(" ^ string_of_typ t ^")"
+  | New t -> "new(" ^ string_of_typ t ^")"
   | Noexpr -> " "
 
 let rec string_of_stmt = function

@@ -1,5 +1,6 @@
-from ctypes import sizeof
+
+from hashlib import new
 
 
-x : *int = sizeof(10)
+x : *int = new(10)
 print(x)
