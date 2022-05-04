@@ -35,7 +35,8 @@ let translate (code: Sast.scode list) =
   and i1_t       = L.i1_type     context 
   and float_t    = L.double_type context
   and none_t     = L.void_type   context in 
-  let vpoint_t   = L.pointer_type i8_t 
+  let vpoint_t   = L.pointer_type i8_t
+
 in
 
   (* Return the LLVM type for a PythonPP type *)
@@ -47,7 +48,8 @@ in
     | A.Pointer p ->
         if p == A.None then vpoint_t else L.pointer_type (ltype_of_typ p)
   in
-  
+
+
   (* Create a map of global variables after creating each 
   let global_vars : L.llvalue StringMap.t =
     let global_var m (t, n) =
@@ -84,11 +86,12 @@ in
     (* with Not_found -> StringMap.find n global_vars *)
     with Not_found -> raise (Failure ("can't find variable"))
   in
+
  
   (* Construct code for an expression; return its value *)
   let rec build_expr curr_symbol_table builder ((_, e) : sexpr) = match e with
      SLiteral i  -> L.const_int i32_t i
-    | SBoolLit b  -> L.const_int i1_t (if b then 1 else 0)
+    | SBoolLit b  -> L.const_int i1_t (if b then 1 else 0) 
     | SFloatLit l -> L.const_float_of_string float_t l
     | SNoexpr ->     L.const_int i32_t 0
     | SId s       -> L.build_load (lookup curr_symbol_table s) s builder
@@ -97,7 +100,7 @@ in
           let t1, s1 = e1 and _, s2 = e2 and e2' = build_expr curr_symbol_table builder e2 in
           let e2' =
             match s2 with
-            | SCall ("malloc", [_]) ->
+            | SCall ("malloc", [_])  ->
                 L.build_bitcast e2' (ltype_of_typ t1) "vpcast" builder
             | _ -> e2'
           in
@@ -106,13 +109,12 @@ in
             | SId s ->
                 ignore (L.build_store e2' (lookup curr_symbol_table  s) builder);
               e2'
-            | SSubscript (s, ix) ->
+           | SSubscript (s, i) ->
                 let e1' =
-                  let s' = build_expr curr_symbol_table builder s 
-                  and ix' = build_expr curr_symbol_table builder ix in
-                  L.build_in_bounds_gep s' (Array.of_list [ix']) "tmp" builder
+                  let s' = build_expr curr_symbol_table builder s and i' = build_expr curr_symbol_table builder i in
+                  L.build_in_bounds_gep s' (Array.of_list [i']) "tmp" builder
                 in
-                ignore (L.build_store e2' e1' builder);
+                ignore (L.build_store e2' e1' builder) ;
                 e2'
             | SDeref s ->
                 let e1' = build_expr curr_symbol_table builder s in
@@ -198,17 +200,25 @@ in
           L.build_load e "deref" builder
       | SDeref s -> L.build_load (build_expr curr_symbol_table builder s) "deref" builder
       | SRefer s -> lookup  curr_symbol_table s
+      | SCall ("new", [e]) ->
+          L.build_array_malloc vpoint_t (build_expr curr_symbol_table builder e) "new" builder
     
-    | SCall ("print", [e]) ->
-      let int_format_str = L.build_global_stringptr "%d\n" "fmt" builder in
-     (* L.build_call printf_func [|(build_expr curr_symbol_table builder e);|] *)
-      L.build_call printf_func [| int_format_str ; (build_expr curr_symbol_table builder e) |]
-        "printf" builder
-    | SCall (f, args) ->
-      let (fdef, fdecl) = StringMap.find f function_decls in
-      let llargs = List.rev (List.map (build_expr curr_symbol_table builder) (List.rev args)) in
-      let result = f ^ "_result" in
-      L.build_call fdef (Array.of_list llargs) result builder
+    
+      | SCall ("print", [e]) ->
+         let int_format_str = L.build_global_stringptr "%d\n" "fmt" builder in
+          (* L.build_call printf_func [|(build_expr curr_symbol_table builder e);|] *)
+          L.build_call printf_func [| int_format_str ; (build_expr curr_symbol_table builder e) |]
+           "printf" builder
+      | SCall (f, args) ->
+         let (fdef, fdecl) = StringMap.find f function_decls in
+         let llargs = List.rev (List.map (build_expr curr_symbol_table builder) (List.rev args)) in
+         let result = f ^ "_result" in
+         L.build_call fdef (Array.of_list llargs) result builder
+
+      | SCall ("malloc", [e]) ->
+          L.build_array_malloc vpoint_t (build_expr curr_symbol_table builder e) "malloc" builder
+      | SCall ("free", [e]) ->
+          L.build_free (build_expr curr_symbol_table builder e) builder
   in
 
   (* LLVM insists each basic block end with exactly one "terminator"

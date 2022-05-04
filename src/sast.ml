@@ -67,10 +67,11 @@ let rec string_of_sexpr (t, e) =
       | SAssign (v, e) -> string_of_sexpr v ^ " = " ^ string_of_sexpr e
       | SAlloc(s,t) -> "*"^s^ ":=" ^ string_of_typ t 
       | SVariableInit(v, t, e) -> "SVariable Init: " ^ v ^ " : " ^ string_of_typ t ^ " = " ^ string_of_sexpr e
-      | SPointerInit(e,t) ->  e ^" : "^ "(*"^ string_of_typ t ^")"
       | SCall (f, el) ->
         f ^ "(" ^ String.concat ", " (List.map string_of_sexpr el) ^ ")"
+      | SCast(e,t) -> "st"
       | SSubscript (e, s) -> string_of_sexpr e ^ "[" ^ string_of_sexpr s ^ "]"
+      | SSizeof t ->  "("^ string_of_typ t  ^ ")"
       | SRefer s -> "&" ^ s
       | SDeref e -> "*" ^ string_of_sexpr e
       | SNoexpr -> "" )
