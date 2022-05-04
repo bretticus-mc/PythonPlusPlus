@@ -30,10 +30,11 @@ let translate (code: Sast.scode list) =
   let the_module = L.create_module context "PythonPP" in
 
   (* Get types from the context *)
-  let i32_t      = L.i32_type    context
-  and i8_t       = L.i8_type     context
-  and i1_t       = L.i1_type     context 
-  and float_t    = L.double_type context
+  let i32_t      = L.i32_type    context (* 32-bit int type *)
+  and i8_t       = L.i8_type     context (* Characters *)
+  and i1_t       = L.i1_type     context (* Boolean type *)
+  and float_t    = L.double_type context (* Double/Float type *)
+  and string_t   = L.pointer_type   (L.i8_type context) (* String type *)
   and none_t     = L.void_type   context in 
   let vpoint_t   = L.pointer_type i8_t
 
@@ -43,8 +44,9 @@ in
   let rec ltype_of_typ = function
       A.Int   -> i32_t
     | A.Bool  -> i1_t
-    | A.None  -> none_t
+    | A.None  -> none_t 
     | A.Float -> float_t
+    | A.String -> string_t
     | A.Pointer p ->
         if p == A.None then vpoint_t else L.pointer_type (ltype_of_typ p)
   in
@@ -93,6 +95,7 @@ in
      SLiteral i  -> L.const_int i32_t i
     | SBoolLit b  -> L.const_int i1_t (if b then 1 else 0) 
     | SFloatLit l -> L.const_float_of_string float_t l
+    | SStringLit s -> L.build_global_stringptr s "str" builder
     | SNoexpr ->     L.const_int i32_t 0
     | SId s       -> L.build_load (lookup curr_symbol_table s) s builder
     (* special handling for deref expr, subscript expr, and malloc *)
@@ -136,7 +139,8 @@ in
 	    A.Add     -> L.build_fadd
 	  | A.Sub     -> L.build_fsub
 	  | A.Mult    -> L.build_fmul
-	  | A.Div     -> L.build_fdiv 
+	  | A.Div     -> L.build_fdiv
+    | A.Eq_Compar -> L.build_fcmp L.Fcmp.Oeq (* Not sure on this *)
 	  | A.Equal   -> L.build_fcmp L.Fcmp.Oeq
 	  | A.Neq     -> L.build_fcmp L.Fcmp.One
 	  | A.Less    -> L.build_fcmp L.Fcmp.Olt
@@ -157,6 +161,7 @@ in
           | A.Div     -> L.build_sdiv
           | A.And     -> L.build_and
           | A.Or      -> L.build_or
+          | A.Eq_Compar -> L.build_icmp L.Icmp.Eq (* No binop version on LLVM *)
           | A.Equal   -> L.build_icmp L.Icmp.Eq
           | A.Neq     -> L.build_icmp L.Icmp.Ne
           | A.Less    -> L.build_icmp L.Icmp.Slt

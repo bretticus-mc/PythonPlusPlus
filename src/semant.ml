@@ -150,6 +150,7 @@ let rec check_expr symbol_table = function
         (* Determine expression type based on operator and operand types *)
         let t = 
         match op with
+          | Eq_Compar when t1 = t2 -> Bool
           | Add | Sub | Div | Mult when t1 = Int -> Int
           | Add | Sub | Div | Mult  when t1 = Float -> Float
           | (Equal | Neq) -> Bool
@@ -199,7 +200,14 @@ let rec check_expr symbol_table = function
           let t, e' = check_expr symbol_table e in
           if is_pointer t then (deref t, SDeref (t, e'))
           else raise (Failure "cannot dereference expression")
+<<<<<<< HEAD
    in
+=======
+      | Noexpr -> (None,SNoexpr)
+
+  in
+
+>>>>>>> df59141f1dad5bb37f18ef84fe6a87f7073e4b24
 let rec check_stmt_list curr_symbol_table  = function
       [] -> []
     | Block sl :: sl'  -> check_stmt_list curr_symbol_table (sl @ sl') (* Flatten blocks *)
@@ -211,7 +219,9 @@ and check_top_stmt curr_symbol_table = function
       Block sl -> SBlock (check_stmt_list curr_symbol_table sl)
     | Expr e -> SExpr (check_expr curr_symbol_table e)
     | If(e, st1, st2) ->
-      SIf(check_bool_expr curr_symbol_table e, check_top_stmt curr_symbol_table st1, check_top_stmt curr_symbol_table st2)
+        SIf(check_bool_expr curr_symbol_table e, check_top_stmt curr_symbol_table st1, check_top_stmt curr_symbol_table st2)
+    | For(e, st) ->
+        SFor(check_expr curr_symbol_table e, check_top_stmt curr_symbol_table st)
     | While(e, st) ->
       SWhile(check_bool_expr curr_symbol_table e, check_top_stmt curr_symbol_table st)
     | For(e1, e2,st) ->
