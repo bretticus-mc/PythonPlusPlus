@@ -36,7 +36,6 @@ type expr =
   | Call of string * expr list (* Function Name and Function Arguments  *)
   | Cast of typ * expr
   | Subscript of expr * expr
-  | PointerInit of string * typ
   (* function call *)
   | Alloc of string * typ
   | Deref of expr
@@ -137,7 +136,6 @@ let rec string_of_expr = function
   | Assign(v, e) -> string_of_expr v ^ " = " ^ string_of_expr e
   | Unop(o, e) -> string_of_uop o ^ string_of_expr e
   | VariableInit(v, t, e) -> v ^ " : " ^ string_of_typ t ^ " = " ^ string_of_expr e
-  | PointerInit(v, t) -> v ^ " :  *"^string_of_typ t
   | Alloc(s,t) ->  "*"^s ^ ":=" ^ "(" ^ string_of_typ t ^")" 
   | Call(f, el) ->
       f ^ "(" ^ String.concat ", " (List.map string_of_expr el) ^ ")"

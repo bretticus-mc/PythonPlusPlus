@@ -39,7 +39,7 @@ let check (code) =
     in List.fold_left add_bind StringMap.empty [
                                ("print", Int, Int);
                                ("prints",Pointer(String), None);
-                               ("sizeof", Pointer(Int), Int);
+                               ("malloc", Pointer(Int), Int);
                                ("malloc", Pointer(Int), None); 
                                ("free", Pointer(None), None);
                                ("new", Int,Int)] 
@@ -137,7 +137,7 @@ let rec check_expr symbol_table = function
                                  " in " ^ string_of_expr ex))
           in (ty, SUnop(op, (t, e')))   
 
-    | PointerInit(s, t) -> ignore(Hashtbl.add symbol_table s t); (t, SPointerInit(s, t))   
+   (* | PointerInit(s, t) -> ignore(Hashtbl.add symbol_table s t); (t, SPointerInit(s, t))   *)
           
     | Binop(e1, op, e2) as e ->
         let t1, e1' = check_expr symbol_table e1  and t2, e2' = check_expr symbol_table e2 in
