@@ -102,11 +102,14 @@ stmt:
   /* if (condition): /n stmt else /n stmt */
   | IF LPAREN expr RPAREN COLON NEWLINE stmt ELSE COLON NEWLINE stmt    { If($3, $7, $11) }
   | WHILE LPAREN expr RPAREN COLON NEWLINE stmt { While ($3, $7)  }
-  | FOR expr IN stmt COLON NEWLINE stmt {For($2,$4, $7 )}
+  | FOR expr_opt IN stmt COLON NEWLINE stmt {For($2,$4, $7 )}
   /* return */
   | RETURN expr NEWLINE                       { Return $2   }
-  | RETURN expr EOF                        { Return $2      } /* Return the Expression */
-
+  | RETURN expr EOF    
+                      { Return $2      } /* Return the Expression */
+expr_opt:
+    /* nothing */ { Noexpr }
+  | expr          { $1 }
 
 expr:
     INT_LITERAL      { Literal($1)            }
@@ -124,21 +127,21 @@ expr:
   | expr GT     expr { Binop($1, Greater,  $3)   }
   | expr AND    expr { Binop($1, And,   $3)   }
   | expr OR     expr { Binop($1, Or,    $3)   }
-  | MINUS expr %prec NEG  { Unop(Neg, $2)    }
-  | MULT expr %prec NEQ{ Deref $2 } 
-  | BIT_AND ID %prec NEQ { Refer $2 }
+  | MINUS expr %prec EXCLAMATION  { Unop(Neg, $2)    }
   | EXCLAMATION expr     { Unop(Not, $2) }
-  | expr EQ expr   { Assign($1, $3) }
+  | MULT expr %prec EXCLAMATION{ Deref $2 } 
+  | BIT_AND ID { Refer $2 }
   | expr LBRACKET expr RBRACKET {Subscript($1, $3)}
+  | expr ASSIG expr   { Assign($1, $3) }
   | ID LPAREN args_opt RPAREN { Call ($1, $3)  } /* args_opt = List of Arguments */
-  | ID COLON MULT typ EQ expr { VariableInit($1, $4, $6) } /* Variable Declaration */ 
+  | ID COLON MULT typ ASSIG expr { VariableInit($1, $4, $6) } /* Variable Declaration */ 
   /* call */
   | LPAREN expr RPAREN { $2}
 
 /* args_opt*/
 args_opt:
   /*nothing*/ { [] }
-  | args { $1 }
+  | args {$1 }
 
 args:
   expr  { [$1] }
