@@ -33,18 +33,16 @@ let check (code) =
       fname = "print";
       formals = [("x", Int)];
       body = [] } StringMap.empty  *)
-    let add_bind map (name, ty) = StringMap.add name {
-      rtyp = ty;
-      fname = name;
-      formals = [("x", ty)];
+    let add_bind map (name, ty, rtyp) = StringMap.add name {
+      fname = name; formals = [("x", ty)]; rtyp = ty; 
       body = [] } map
-    in List.fold_left add_bind StringMap.empty [("print", Int);
-                               ("printb", Bool);
-                               ("printf", Float);
-                               ("prints", String);
-                               ("sizeof", Pointer(Int));
-                               ("malloc",Pointer(Int));
-                               ("free", Pointer(Int))] 
+    in List.fold_left add_bind StringMap.empty [
+                               ("print", Int, Int);
+                               ("prints",Pointer(String), None);
+                               ("sizeof", Pointer(Int), Int);
+                               ("malloc", Pointer(Int), None); 
+                               ("free", Pointer(None), None);
+                               ("new", Int,Int)] 
     (* Add the key: "print" and value: Function Definition *)
   in
 
@@ -80,15 +78,23 @@ in
 (* Raise an exception if the given rvalue type cannot be assigned to
    the given lvalue type *)
 let check_assign lvaluet rvaluet err =
-  if lvaluet = rvaluet then lvaluet else raise (Failure err)
+    let typ =
+      match lvaluet with
+      | Pointer None ->
+          if is_pointer rvaluet then rvaluet else raise (Failure err)
+      | Pointer _ ->
+          if rvaluet = Pointer None || rvaluet = lvaluet then lvaluet
+            else raise (Failure err)
+      | _ -> if lvaluet = rvaluet then lvaluet else raise (Failure err)
+  in
+  typ
 in
-
 (* Return a variable from our local symbol table *)
 let type_of_identifier symbol_table s =
   try Hashtbl.find symbol_table s
   with Not_found -> raise (Failure ("undeclared identifier " ^ s))
 in
-let rec deref p =
+let deref p =
     match p with
     | Pointer s -> s
     | _ -> raise (Failure "cannot dereference expression")
@@ -98,7 +104,10 @@ let rec check_expr symbol_table = function
       Literal l -> (Int, SLiteral l)
     | FloatLit l -> (Float, SFloatLit l)
     | BoolLit l -> (Bool, SBoolLit l)
-    | StringLit l -> (String, SStringLit l)
+    | StringLit l -> ( Pointer String , SStringLit l)
+    | Sizeof t -> (Int, SSizeof t )
+    | Null -> (Pointer None, SNull )
+    | Noexpr -> (None, SNoexpr)
     | Id var -> (type_of_identifier symbol_table var, SId var)
     | VariableInit(var, t, e) -> (* var = Variable Name, t = Type, e = Expression *) 
         ignore(Hashtbl.add symbol_table var t);  (* Add Variable to Hashtable *)
@@ -114,15 +123,22 @@ let rec check_expr symbol_table = function
                  | _ -> raise (Failure "left expression is not assignable")
              in
              (check_assign t1 t2 err, SAssign ((vt, e1'), (t2, e2')))
+    (*| Alloc(s,t) -> let dv = ref s in dv := string_of_typ t *)
+       
     | Unop(op, e) as ex -> 
           let (t, e') = check_expr symbol_table e in
           let ty = match op with
-            Neg when t = Int || t = Float -> t
-          | Not when t = Bool -> Bool
+            Neg when t = Int || t = Float -> t 
+          | Not when t = Bool -> Bool 
+          | Ampy when t = Int || t = Float || t = String -> t
+          | Bitty when t = Int || t = Float || t = String -> t
           | _ -> raise (Failure ("illegal unary operator " ^ 
                                  string_of_uop op ^ string_of_typ t ^
                                  " in " ^ string_of_expr ex))
-          in (ty, SUnop(op, (t, e')))           
+          in (ty, SUnop(op, (t, e')))   
+
+    | PointerInit(s, t) -> ignore(Hashtbl.add symbol_table s t); (t, SPointerInit(s, t))   
+          
     | Binop(e1, op, e2) as e ->
         let t1, e1' = check_expr symbol_table e1  and t2, e2' = check_expr symbol_table e2 in
         let err = "illegal binary operator " ^
@@ -135,13 +151,14 @@ let rec check_expr symbol_table = function
         let t = 
         match op with
           | Add | Sub | Div | Mult when t1 = Int -> Int
-          | Add | Sub | Div | Mult when t1 = Float -> Float
+          | Add | Sub | Div | Mult  when t1 = Float -> Float
           | (Equal | Neq) -> Bool
           | (Less | Leq | Greater | Geq) 
              when t1 = Int || t1 = Float || is_pointer t1  -> Bool
           | And | Or when t1 = Bool -> Bool
           (* pointer addition and subtraction *)
-          | (Add | Sub) when is_pointer t1 && t2 = Int -> t1
+          | (Add | Sub ) when is_pointer t1 && t2 = Int -> t1
+          | (Add | Sub ) when is_pointer t1 && t2 = Float -> t1
           | _ -> raise(Failure err)
             
         in
@@ -161,9 +178,8 @@ let rec check_expr symbol_table = function
         in
         let args' = List.map2 check_call fd.formals args
         in (fd.rtyp, SCall(fname, args'))
-
       (* subscript main expr must be a pointer and the subscript must be integer *)
-      | Subscript (e, s) ->
+    | Subscript (e, s) ->
           let te, e' = check_expr symbol_table e and ts, s' = check_expr  symbol_table  s in
           if ts != Int then raise (Failure "subscript expression not integral")
           else
@@ -173,6 +189,9 @@ let rec check_expr symbol_table = function
               | _ -> raise (Failure "main expression not a pointer")
             in
             (ts, SSubscript ((te, e'), (ts, s')))
+         
+
+      | Alloc(s, t) -> ignore(Hashtbl.add symbol_table s t); (t, SAlloc(s, t)) 
 
       | Refer s -> (Pointer (type_of_identifier symbol_table s), SRefer s)
 
@@ -180,8 +199,7 @@ let rec check_expr symbol_table = function
           let t, e' = check_expr symbol_table e in
           if is_pointer t then (deref t, SDeref (t, e'))
           else raise (Failure "cannot dereference expression")
-  in
-
+   in
 let rec check_stmt_list curr_symbol_table  = function
       [] -> []
     | Block sl :: sl'  -> check_stmt_list curr_symbol_table (sl @ sl') (* Flatten blocks *)
@@ -196,6 +214,8 @@ and check_top_stmt curr_symbol_table = function
       SIf(check_bool_expr curr_symbol_table e, check_top_stmt curr_symbol_table st1, check_top_stmt curr_symbol_table st2)
     | While(e, st) ->
       SWhile(check_bool_expr curr_symbol_table e, check_top_stmt curr_symbol_table st)
+    | For(e1, e2,st) ->
+	    SFor(check_bool_expr curr_symbol_table e1,check_top_stmt curr_symbol_table e2, check_top_stmt curr_symbol_table st)
     | Return e ->
       let (t, e') = check_expr curr_symbol_table e in
       SReturn (t, e')
@@ -228,9 +248,10 @@ and check_top_stmt curr_symbol_table = function
     *)
 
      (* body of check_func *)
-    { srtyp = func.rtyp;
+    { 
       sfname = func.fname;
       sformals = func.formals;
+      srtyp = func.rtyp;
       sbody = check_stmt_list local_symbol_table func.body
     }
   in

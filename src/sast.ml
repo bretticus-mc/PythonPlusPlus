@@ -6,34 +6,42 @@ type sexpr = typ * sx
 
 and sx =
     SLiteral of int
+  | SStringLit of string
   | SFloatLit of string
-  | SBoolLit of bool
   | SId of string
+  | SBoolLit of bool
+  | SNull
   | SBinop of sexpr * op * sexpr
   | SUnop of uop * sexpr
-  | SAssign of sexpr * sexpr
-  | SStringLit of string
-  | SVariableInit of string * typ * sexpr
-  (* call *)
   | SCall of string * sexpr list
+  | SCast of typ * sexpr
+  | SAlloc of string * typ 
+  | SVariableInit of string * typ * sexpr
+  | SPointerInit of string * typ
+  | SAssign of sexpr * sexpr
+  (* call *)
   | SSubscript of sexpr * sexpr
   | SRefer of string
   | SDeref of sexpr
+  | SSizeof of typ
   | SNoexpr
 
 
 type sstmt =
-    SBlock of sstmt list
-  | SExpr of sexpr
+    SExpr of sexpr
+  | SBlock of sstmt list
+  | SReturn of sexpr
   | SIf of sexpr * sstmt * sstmt
   | SWhile of sexpr * sstmt
+  | SFor of sexpr * sstmt *  sstmt
   (* return *)
-  | SReturn of sexpr
+
 
 (* func_def: ret_typ fname formals locals body *)
 type sfunc_def = {
-  srtyp: typ; (* Function Return Type *)
+(* Function Return Type *)
   sfname: string; (* Function Name *)
+  srtyp: typ; 
   sformals: bind list; (* Function Arguments *) 
   sbody: sstmt list; (* Function Body *)
 }
@@ -50,14 +58,16 @@ let rec string_of_sexpr (t, e) =
         SLiteral(l) -> string_of_int l
       | SFloatLit(l) -> l
       | SStringLit(l) -> l
-      | SBoolLit(true) -> "True"
-      | SBoolLit(false) -> "False"
+      | SBoolLit(b) -> if b then "True"  else "False"
+      | SNull -> "Null"
       | SId(s) -> s
-      | SBinop(e1, o, e2) -> "Binop: " ^
+      | SBinop(e1, o, e2) -> "Binop: "^
         string_of_sexpr e1 ^ " " ^ string_of_op o ^ " " ^ string_of_sexpr e2
       | SUnop(o, e) -> string_of_uop o ^ string_of_sexpr e
       | SAssign (v, e) -> string_of_sexpr v ^ " = " ^ string_of_sexpr e
+      | SAlloc(s,t) -> "*"^s^ ":=" ^ string_of_typ t 
       | SVariableInit(v, t, e) -> "SVariable Init: " ^ v ^ " : " ^ string_of_typ t ^ " = " ^ string_of_sexpr e
+      | SPointerInit(e,t) ->  e ^" : "^ "(*"^ string_of_typ t ^")"
       | SCall (f, el) ->
         f ^ "(" ^ String.concat ", " (List.map string_of_sexpr el) ^ ")"
       | SSubscript (e, s) -> string_of_sexpr e ^ "[" ^ string_of_sexpr s ^ "]"
@@ -73,6 +83,9 @@ let rec string_of_sstmt = function
   | SIf(e, s1, s2) ->  "SIf: if (" ^ string_of_sexpr e ^ ")\n" ^
                        string_of_sstmt s1 ^ "else\n" ^ string_of_sstmt s2
   | SWhile(e, s) -> "Swhile: while " ^ string_of_sexpr e ^ ": " ^ string_of_sstmt s ^ "End of While Loop"
+  | SFor(i,e, s) -> "for"^ string_of_sexpr i ^"in"^ string_of_sstmt e ^ ":\n" ^
+                           string_of_sstmt s
+
 
 let string_of_sfdecl fdecl =
   "def " ^ fdecl.sfname ^ "(" ^ 

@@ -12,6 +12,7 @@
 
 *)
 
+
 module L = Llvm
 module A = Ast
 open Sast
@@ -93,12 +94,12 @@ in
     | SId s       -> L.build_load (lookup curr_symbol_table s) s builder
     (* special handling for deref expr, subscript expr, and malloc *)
     | SAssign (e1, e2) ->
-          let t1, s1 = e1 and _, s2 = e2 and e2'' = build_expr curr_symbol_table  builder e2 in
+          let t1, s1 = e1 and _, s2 = e2 and e2' = build_expr curr_symbol_table builder e2 in
           let e2' =
             match s2 with
             | SCall ("malloc", [_]) ->
-                L.build_bitcast e2'' (ltype_of_typ t1) "vpcast" builder
-            | _ -> e2''
+                L.build_bitcast e2' (ltype_of_typ t1) "vpcast" builder
+            | _ -> e2'
           in
           let e =
             match s1 with
@@ -125,7 +126,7 @@ in
       in
       ignore(Hashtbl.add curr_symbol_table var_name var_allocation);
       ignore(L.build_store s_expr' var_allocation builder); s_expr' (* TODO: Should s_expr' be return value? *)
-
+    
     | SBinop ((A.Float,_ ) as e1, op, e2) ->
 	      let e1' = build_expr curr_symbol_table builder e1
 	  and e2' = build_expr curr_symbol_table builder e2 in
@@ -196,7 +197,7 @@ in
           in
           L.build_load e "deref" builder
       | SDeref s -> L.build_load (build_expr curr_symbol_table builder s) "deref" builder
-      | SRefer s -> lookup  curr_symbol_table    s
+      | SRefer s -> lookup  curr_symbol_table s
     
     | SCall ("print", [e]) ->
       let int_format_str = L.build_global_stringptr "%d\n" "fmt" builder in
@@ -218,6 +219,8 @@ in
   match L.block_terminator (L.insertion_block builder) with
     Some _ -> ()
   | None -> ignore (instr builder) in
+
+ 
   
 
   (* Build the code for the given statement; return the builder for
