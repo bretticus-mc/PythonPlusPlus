@@ -15,6 +15,10 @@ and sx =
   | SVariableInit of string * typ * sexpr
   (* call *)
   | SCall of string * sexpr list
+  | SListLiteral of sexpr list
+  (*| SStringListLiteral of sexpr list*)
+  | SListAccess of string * sexpr
+  | SListIndAssign of string * sexpr * sexpr
 
 type sstmt =
     SBlock of sstmt list
@@ -46,6 +50,8 @@ let rec string_of_sexpr (t, e) =
       | SStringLit(l) -> l
       | SBoolLit(true) -> "True"
       | SBoolLit(false) -> "False"
+      | SListLiteral(elem) -> "[" ^ String.concat ", " (List.map string_of_sexpr elem) ^ "]"
+(*      | SStringListLiteral(elem) -> "[" ^ String.concat ", " (List.map string_of_sexpr elem) ^ "]"*)
       | SId(s) -> s
       | SBinop(e1, o, e2) -> "Binop: " ^
         string_of_sexpr e1 ^ " " ^ string_of_op o ^ " " ^ string_of_sexpr e2
@@ -53,6 +59,8 @@ let rec string_of_sexpr (t, e) =
       | SVariableInit(v, t, e) -> "SVariable Init: " ^ v ^ " : " ^ string_of_typ t ^ " = " ^ string_of_sexpr e
       | SCall(f, el) ->
           f ^ "(" ^ String.concat ", " (List.map string_of_sexpr el) ^ ")"
+      | SListAccess(i, e) -> i ^ "[" ^ string_of_sexpr e ^ "]"
+      | SListIndAssign(l, i, e) -> l ^ "[" ^ string_of_sexpr i ^ "]" ^ " = " ^ string_of_sexpr e 
     ) ^ ")"
 
 let rec string_of_sstmt = function

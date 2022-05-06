@@ -1,6 +1,6 @@
 type op = Add | Sub | Mult | Div | Equal | Neq | Less | Greater | And | Or | Eq_Compar
 
-type typ = Int | Bool | Float | String | None
+type typ = Int | Bool | Float | String | None | Array of typ  (*StringArray of typ*)
 
 (* Defining what expressions can be *)
 type expr =
@@ -14,6 +14,10 @@ type expr =
   | VariableInit of string * typ * expr
   (* function call *)
   | Call of string * expr list (* Function Name and Function Arguments  *)
+  | ListLiteral of expr list
+  | ListAccess of string * expr
+  | ListIndAssign of string * expr * expr
+  
   
 
 (* Defining what statements can be *)
@@ -60,12 +64,13 @@ let string_of_op = function
   | And -> "and"
   | Or -> "or"
 
-let string_of_typ = function
+let rec string_of_typ = function
     Int -> "int"
   | Bool -> "bool"
   | Float -> "float"
   | String -> "String"
   | None -> "None"
+  | Array(t) -> "List[" ^ string_of_typ t ^ "]"
   
 let rec string_of_expr = function
     Literal(l) -> string_of_int l
@@ -73,6 +78,8 @@ let rec string_of_expr = function
   | BoolLit(true) -> "True"
   | BoolLit(false) -> "False"
   | StringLit(s) -> s
+  | ListLiteral(elem) -> "[" ^ String.concat ", " (List.map string_of_expr elem) ^ "]"
+  (*| StringListLiteral(elem) -> "[" ^ String.concat ", " (List.map string_of_expr elem) ^ "]"*)
   | Id(s) -> s
   | Binop(e1, o, e2) ->
     string_of_expr e1 ^ " " ^ string_of_op o ^ " " ^ string_of_expr e2
@@ -80,6 +87,8 @@ let rec string_of_expr = function
   | VariableInit(v, t, e) -> v ^ " : " ^ string_of_typ t ^ " = " ^ string_of_expr e
   | Call(f, el) ->
       f ^ "(" ^ String.concat ", " (List.map string_of_expr el) ^ ")"
+  | ListAccess(i, e) -> i ^ "[" ^ string_of_expr e ^ "]"
+  | ListIndAssign(l, i, e) -> l ^ "[" ^ string_of_expr i ^ "]" ^ " = " ^ string_of_expr e 
 
 let rec string_of_stmt = function
     Block(stmts) ->

@@ -75,15 +75,22 @@ let check (code) =
 
 (* Raise an exception if the given rvalue type cannot be assigned to
    the given lvalue type *)
-let check_assign lvaluet rvaluet err =
-  if lvaluet = rvaluet then lvaluet else raise (Failure err)
-in
 
 (* Return a variable from our local symbol table *)
 let type_of_identifier symbol_table s =
   try Hashtbl.find symbol_table s
   with Not_found -> raise (Failure ("undeclared identifier " ^ s))
 in
+
+let check_assign lvaluet rvaluet err =
+  if lvaluet = rvaluet then lvaluet else raise (Failure err)
+in
+
+
+(*let check_assign_vars lvaluet rvaluet err = match (lvaluet, rvaluet) with
+(Int, ListLiteral(_)) -> lvaluet
+| _ -> if lvaluet = rvaluet then lvaluet else raise (Failure err)
+in *)
 
 (* Return a semantically-checked expression, i.e., with a type *)
 let rec check_expr symbol_table = function
@@ -136,6 +143,26 @@ let rec check_expr symbol_table = function
         in
         let args' = List.map2 check_call fd.formals args
         in (fd.rtyp, SCall(fname, args'))
+    | ListLiteral values ->
+      (*let length = List.length values in*)
+      let l' = List.map (check_expr symbol_table) values in
+      let rec ct = function
+          [] -> (Array(None), SListLiteral(l'))
+        | (t1, _) :: [] -> (Array(t1), SListLiteral(l'))
+        |	((t1,_) :: (t2,_) :: _) when t1 != t2 ->  
+        raise (Failure ("Error: not allowed to have list types " ^ string_of_typ t1 ^ " and " ^ string_of_typ t2 ^ "together" ))
+        | _ :: t -> ct t
+        in ct l'
+    | ListAccess(l, i) ->
+      let lt = (type_of_identifier symbol_table l)
+      in let v = check_expr symbol_table i in (lt, SListAccess(l, v))
+    | ListIndAssign(l, i, e)->
+      let lt = (type_of_identifier symbol_table l)
+      and (rt, e') = check_expr symbol_table e 
+      and (ri, i) = check_expr symbol_table i 
+      in
+      (lt, SListIndAssign(l, (ri, i), (rt, e')))
+      
   in
 
 let rec check_stmt_list curr_symbol_table  = function

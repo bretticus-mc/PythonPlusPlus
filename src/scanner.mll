@@ -83,6 +83,8 @@ rule scan_token = parse
 	| ")" { RPAREN }
 	| "{" { LBRACE }
 	| "}" { RBRACE }
+	| "[" { LBRACKET }
+	| "]" { RBRACKET }
 	| "," { COMMA }
 	| "." { DOT }
 	| ":" { COLON }
@@ -120,6 +122,7 @@ rule scan_token = parse
 	| "None" { NONE }
 	| "return" { RETURN }
 	| "float" { FLOAT }
+	| "List" { LIST }
 	| "#" { read_single_line_comment lexbuf }
 	| "\"\"\"" { read_multi_line_comment lexbuf }
 	| digit+ as lem  { INT_LITERAL(int_of_string lem) }

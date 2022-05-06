@@ -12,9 +12,9 @@ open Ast
 %token EQ NOT_EQ LT GT AND OR NOT DOT PLUS_EQ MINUS_EQ MULT_EQ DIV_EQ EXCLAMATION EQ_COMPARISON NOTEQUAL IN COLON
 
 %token IF ELSE WHILE FOR DEF RETURN COMMA NEWLINE
-%token SEMI LPAREN RPAREN LBRACE RBRACE
+%token SEMI LPAREN RPAREN LBRACE RBRACE LBRACKET RBRACKET
 %token TRUE FALSE NONE DEDENT INDENT
-%token MOD RANGLE ARROW
+%token MOD RANGLE ARROW LIST
 
 %token <string> FLOAT_LITERAL
 %token <int> INT_LITERAL
@@ -58,6 +58,7 @@ typ:
   | FLOAT  { Float }
   | STRING { String }
   | NONE { None }
+  | LIST LBRACKET typ RBRACKET  { Array($3) }
 
 /* fdecl 
 def main(x: int, y: int) -> None:
@@ -105,6 +106,7 @@ expr:
   | BLIT             { BoolLit($1)            }
   | STRING_LITERAL   { StringLit($1) } 
   | ID               { Id($1)                 }
+  | list_lit { $1 }
   | expr PLUS   expr { Binop($1, Add,   $3)   }
   | expr MINUS  expr { Binop($1, Sub,   $3)   }
   | expr MULT expr   { Binop($1, Mult,   $3)   }
@@ -120,6 +122,11 @@ expr:
   | ID COLON typ EQ expr { VariableInit($1, $3, $5) } /* Variable Declaration */
   /* call */
   | ID LPAREN args_opt RPAREN { Call ($1, $3)  } /* args_opt = List of Arguments */
+  | ID LBRACKET expr RBRACKET { ListAccess($1, $3) }
+  | ID LBRACKET expr RBRACKET EQ expr { ListIndAssign($1, $3, $6) }
+
+list_lit:
+  LBRACKET args RBRACKET { ListLiteral($2) }
 
 /* args_opt*/
 args_opt:

@@ -20,6 +20,8 @@ module StringMap = Map.Make(String)
 let var_map = Hashtbl.create 12345
 
 
+
+
 (* translate : Sast.program -> Llvm.module *)
 let translate (code: Sast.scode list) =
   let context    = L.global_context () in
@@ -27,20 +29,32 @@ let translate (code: Sast.scode list) =
   (* Create the LLVM compilation module into which
      we will generate code *)
   let the_module = L.create_module context "PythonPP" in
-
   (* Get types from the context *)
-  let i32_t      = L.i32_type    context
-  and i8_t       = L.i8_type     context
-  and i1_t       = L.i1_type     context 
-  and none_t     = L.void_type   context
-in
+  let i32_t      = L.i32_type    context (* 32-bit int type *)
+  and i8_t       = L.i8_type     context (* Characters *)
+  and i1_t       = L.i1_type     context (* Boolean type *)
+  and float_t    = L.double_type context (* Double/Float type *)
+  and string_t   = L.pointer_type   (L.i8_type context) (* String type *)
+  and none_t     = L.void_type   context in 
+  
+
 
   (* Return the LLVM type for a PythonPP type *)
-  let ltype_of_typ = function
-      A.Int   -> i32_t
+  let rec ltype_of_typ = function
+    A.Int   -> i32_t
     | A.Bool  -> i1_t
-    | A.None  -> none_t
+    | A.None  -> none_t 
+    | A.Float -> float_t
+    | A.String -> string_t
+    | A.Array(t) ->  L.array_type (ltype_of_typ t) 3
   in
+
+
+
+
+    (* array functions *)
+  
+
 
   (* Create a map of global variables after creating each 
   let global_vars : L.llvalue StringMap.t =
@@ -49,7 +63,8 @@ in
       in StringMap.add n (L.define_global n init the_module) m in
     List.fold_left global_var StringMap.empty globals in
   *)
-
+ 
+ 
   let printf_t : L.lltype =
     L.var_arg_function_type i32_t [| L.pointer_type i8_t |] in
   let printf_func : L.llvalue =
@@ -77,10 +92,14 @@ in
     with Not_found -> raise (Failure ("can't find variable"))
   in
  
+
+  
   (* Construct code for an expression; return its value *)
-  let rec build_expr curr_symbol_table builder ((_, e) : sexpr) = match e with
+  let rec build_expr curr_symbol_table builder ((e_type, e) : sexpr) = match e with
     SLiteral i  -> L.const_int i32_t i
 (*  | SStringLit s -> *)
+    | SFloatLit l -> L.const_float_of_string float_t l
+    | SStringLit s -> L.build_global_stringptr s "str" builder
     | SBoolLit b  -> L.const_int i1_t (if b then 1 else 0)
     | SId s       -> L.build_load (lookup curr_symbol_table s) s builder
     | SAssign (s, e) -> let e' = build_expr curr_symbol_table builder e in
@@ -101,6 +120,10 @@ in
       | A.Equal   -> L.build_icmp L.Icmp.Eq
       | A.Neq     -> L.build_icmp L.Icmp.Ne
       | A.Less    -> L.build_icmp L.Icmp.Slt
+      | A.Mult    -> L.build_fmul
+      | A.Div     -> L.build_fdiv
+      | A.Eq_Compar -> L.build_fcmp L.Fcmp.Oeq (* Not sure on this *)
+      | A.Greater -> L.build_fcmp L.Fcmp.Ogt
       ) e1' e2' "tmp" builder
     | SCall ("print", [e]) ->
       let int_format_str = L.build_global_stringptr "%d\n" "fmt" builder in
@@ -112,6 +135,57 @@ in
       let llargs = List.rev (List.map (build_expr curr_symbol_table builder) (List.rev args)) in
       let result = f ^ "_result" in
       L.build_call fdef (Array.of_list llargs) result builder
+    | SListLiteral(literals) ->
+      let av = List.map(fun el -> snd(el)) literals in
+      (match e_type with
+        A.Array(A.Int) -> 
+          let listvals vals = 
+            match vals with
+          SLiteral(v) -> v
+          | _ -> 0
+         in
+        let v = List.map listvals av in
+        let values = List.map(L.const_int i32_t) v in
+
+        L.const_array i32_t (Array.of_list values)
+      | A.Array(A.String) ->
+        let listvals vals = 
+          match vals with
+        SStringLit(v) -> v
+        | _ -> ""
+        in
+        let v = List.map listvals av in
+        let sexprList = List.map (fun e -> (A.String, SStringLit(e))) v in
+        let values = List.map (fun f -> build_expr curr_symbol_table builder f) sexprList in
+        L.const_array string_t (Array.of_list values)
+      |_ -> raise (Failure ("no type"))
+
+      )
+
+      
+      (*| A.Array(A.Float) -> 
+        let v = List.map extractFValues arrayValues in
+        let values = List.map(L.const_float float_t) v in
+        (*in let reversed_v = List.rev values in*)
+        L.const_array float_t (Array.of_list values)
+      )*)
+      
+
+    | SListAccess(id, index) ->
+      let ind = (build_expr curr_symbol_table builder index)
+      in let value = L.build_gep (lookup curr_symbol_table id) [| (L.const_int i32_t 0); ind |] "tmp" builder
+      in L.build_load value "tmp" builder
+
+    | SListIndAssign (s, idx, e) -> 
+      let e' = build_expr curr_symbol_table builder e and
+      ind = build_expr curr_symbol_table builder idx
+      in
+      let el = L.build_gep (lookup curr_symbol_table s) [| (L.const_int i32_t 0); ind |] "" builder and
+      e' = e'
+    in
+      ignore(L.build_store e' el builder); e'
+
+
   in
 
   (* LLVM insists each basic block end with exactly one "terminator"
