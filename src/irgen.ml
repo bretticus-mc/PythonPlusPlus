@@ -320,9 +320,12 @@ in
     
     (* Build the code for each statement in the function *)
     let complete_func_builder = build_stmt the_function local_symbol_table func_builder (SBlock fdecl.sbody) in
-
-    (* Add a return if the last block falls off the end *)
-    add_terminal complete_func_builder (L.build_ret (L.const_int i32_t 0)); 
+    
+    let () = (match fdecl.srtyp with
+      None -> ignore(L.build_ret_void complete_func_builder);
+      | _ -> (* Add a return if the last block falls off the end *)
+        ignore(add_terminal complete_func_builder (L.build_ret (L.const_int i32_t 0)))); 
+    in
     builder
   in
 

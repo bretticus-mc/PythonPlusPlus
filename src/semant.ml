@@ -42,8 +42,6 @@ let check (code) =
  (*                              ("printb", Bool);
                                ("printf", Float);
                                ("prints", String); *)
-                               ("malloc", Pointer(Int), Int);
-                               ("malloc", Pointer(Int), None); 
                                ("free", Pointer(None), None)
                                ] 
     (* Add the key: "print" and value: Function Definition *)
@@ -108,8 +106,6 @@ let rec check_expr symbol_table = function
     | FloatLit l -> (Float, SFloatLit l)
     | BoolLit l -> (Bool, SBoolLit l)
     | StringLit l -> (String , SStringLit l)
-    (*| New(t) -> (Int, SNew t )
-    | Null -> (Pointer None, SNull ) *)
     | Id var -> (type_of_identifier symbol_table var, SId var)
     | VariableInit(var_name, var_type, e) as ex -> (* var = Variable Name, t = Type, e = Expression *)
         let (right_hand_type, right_hand_expr) =  check_expr symbol_table e in
@@ -138,7 +134,6 @@ let rec check_expr symbol_table = function
                  | _ -> raise (Failure "left expression is not assignable")
              in
              (check_assign t1 t2 err, SAssign ((vt, e1'), (t2, e2')))
-    (*| Alloc(s,t) -> let dv = ref s in dv := string_of_typ t *)
     | Unop(op, e) as ex -> 
           let (t, e') = check_expr symbol_table e in
           let ty = match op with
@@ -150,7 +145,6 @@ let rec check_expr symbol_table = function
                                  string_of_uop op ^ string_of_typ t ^
                                  " in " ^ string_of_expr ex))
           in (ty, SUnop(op, (t, e')))   
-   (* | PointerInit(s, t) -> ignore(Hashtbl.add symbol_table s t); (t, SPointerInit(s, t))   *)
     | Binop(e1, op, e2) as e ->
       let (t1, e1') = check_expr symbol_table e1
       and (t2, e2') = check_expr symbol_table e2 in
@@ -203,8 +197,6 @@ let rec check_expr symbol_table = function
               | _ -> raise (Failure "main expression not a pointer")
             in
             (ts, SSubscript ((te, e'), (ts, s')))
-      (*| Alloc(s, t) -> ignore(Hashtbl.add symbol_table s t); (t, SAlloc(s, t))  *)
-
       | Refer s -> (Pointer (type_of_identifier symbol_table s), SRefer s)
 
       | Deref e ->
@@ -252,12 +244,7 @@ and check_top_stmt curr_symbol_table = function
       (* *)
     in
     ignore(build_local_symbol_table local_symbol_table func.formals);
-    (* Build local symbol table of variables for this function 
-    let local_symbols = List.fold_left (fun m (name, ty) -> Hashtbl.add name ty m)
-        (* StringMap.empty (globals @ func.formals @ func.locals ) *)
-        curr_symbol_table (func.formals)
-    in
-    *)
+
     let rec check_func_statements = function
       [] -> []
     | Return e :: sl -> let (t, e') = check_expr local_symbol_table e in
