@@ -6,8 +6,6 @@ all: pythonpp.native
 
 pythonpp.native:
 	ocamlbuild -pkgs llvm pythonpp.native
-	ocamlbuild test1.native
-	ocamlbuild test2.native
 
 repl: parser.cmo scanner.cmo ast.cmo sast.cmo semant.cmo repl.cmo
 	ocamlc str.cma -w A -o repl $^

@@ -63,9 +63,7 @@ rule scan_token = parse
 		let prev_indent_level = Stack.top indention_stack in
 		if curr_indent_level > prev_indent_level then
 			((ignore(enqueue_indents queue_of_tokens prev_indent_level curr_indent_level);
-			Stack.push curr_indent_level indention_stack;
-
-			);
+			Stack.push curr_indent_level indention_stack;);
 			NEWLINE
 			)
 		else if curr_indent_level = prev_indent_level then
@@ -83,20 +81,23 @@ rule scan_token = parse
 	| ")" { RPAREN }
 	| "{" { LBRACE }
 	| "}" { RBRACE }
+	| "[" { LBRACKET }
+	| "]" { RBRACKET }
 	| "," { COMMA }
 	| "." { DOT }
 	| ":" { COLON }
 	| ";" { SEMI }
 	| "=" { EQ }
 	| "%" { MOD }
+	| "&"  {BIT_AND}
 	| "+" { PLUS }
 	| "-" { MINUS }
 	| "*" { MULT }
 	| "/" { DIV }
 	| "+=" { PLUS_EQ }
-	| "-=" { MINUS_EQ }
-	| "*=" { MULT_EQ }
-	| "/=" { DIV_EQ }
+    | "-=" { MINUS_EQ }
+    | "*=" { MULT_EQ }
+    | "/=" { DIV_EQ }
 	| "<" { LT }
 	| ">" { GT }
 	| "->" { ARROW }
@@ -118,8 +119,11 @@ rule scan_token = parse
 	| "int" { INT }
 	| "String" { STRING }
 	| "None" { NONE }
+	(*| "NULL" {NULL} *)
 	| "return" { RETURN }
 	| "float" { FLOAT }
+	| "sizeof" {SIZEOF}
+	(* | "new" {NEW} *)
 	| "#" { read_single_line_comment lexbuf }
 	| "\"\"\"" { read_multi_line_comment lexbuf }
 	| digit+ as lem  { INT_LITERAL(int_of_string lem) }

@@ -10,8 +10,7 @@ let var_map = Hashtbl.create 12345
 
 (* Semantic checking of the AST. Returns an SAST if successful,
    throws an exception if something is wrong.
-
-   Check each global variable, then check each function declaration *)
+ *)
 
 (* code = func_def and stmnt list *)
 let check (code) =
@@ -33,28 +32,30 @@ let check (code) =
       fname = "print";
       formals = [("x", Int)];
       body = [] } StringMap.empty  *)
-    let add_bind map (name, ty) = StringMap.add name {
-      rtyp = ty;
-      fname = name;
-      formals = [("x", ty)];
+    let add_bind map (name, ty, rtyp) = StringMap.add name {
+      fname = name; formals = [("x", ty)]; rtyp = ty; 
       body = [] } map
-    in List.fold_left add_bind StringMap.empty [("print", Int);
-                               ("printb", Bool);
+    in List.fold_left add_bind StringMap.empty [
+                               ("print", Int, Int);
+                               ("prints",String, None);
+ (*                              ("printb", Bool);
                                ("printf", Float);
-                               ("prints", String);] 
+                               ("prints", String); *)
+                               ("free", Pointer(Int), None)
+                               ] 
     (* Add the key: "print" and value: Function Definition *)
   in
 
   (* Add function name to symbol table *)
-  let add_func map fd =
-    let built_in_err = "function " ^ fd.fname ^ " may not be defined"
-    and dup_err = "duplicate function " ^ fd.fname
+  let add_func map function_def =
+    let built_in_err = "function " ^ function_def.fname ^ " may not be defined"
+    and dup_err = "duplicate function " ^ function_def.fname
     and make_err er = raise (Failure er)
-    and n = fd.fname (* Name of the function *)
-    in match fd with (* No duplicate functions or redefinitions of built-ins *)
+    and n = function_def.fname (* Name of the function *)
+    in match function_def with (* No duplicate functions or redefinitions of built-ins *)
       _ when StringMap.mem n built_in_decls -> make_err built_in_err
     | _ when StringMap.mem n map -> make_err dup_err
-    | _ ->  StringMap.add n fd map
+    | _ ->  StringMap.add n function_def map
   in
 
   (* Build symbol table *)
@@ -66,31 +67,47 @@ let check (code) =
   (* Collect all function declarations into symbol table *)
   let function_decls = List.fold_left build_func_table built_in_decls code
   in
+  let is_pointer p = match p with Pointer _ -> true | _ -> false in
 
   (* Return a function from symbol table *)
   let find_func s =
     try StringMap.find s function_decls
     with Not_found -> raise (Failure ("unrecognized function " ^ s))
-  in
+in
 
 (* Raise an exception if the given rvalue type cannot be assigned to
    the given lvalue type *)
 let check_assign lvaluet rvaluet err =
+    let typ =
+      match lvaluet with
+      | Pointer None ->
+          if is_pointer rvaluet then rvaluet else raise (Failure err)
+      | Pointer p_typ ->
+          if rvaluet = Pointer None || rvaluet = p_typ then lvaluet
+            else raise (Failure err)
+      | _ -> if lvaluet = rvaluet then lvaluet else raise (Failure err)
+  in
+  typ
+in
+let check_args lvaluet rvaluet err = 
   if lvaluet = rvaluet then lvaluet else raise (Failure err)
 in
-
 (* Return a variable from our local symbol table *)
 let type_of_identifier symbol_table s =
   try Hashtbl.find symbol_table s
   with Not_found -> raise (Failure ("undeclared identifier " ^ s))
 in
-
+let deref p =
+    match p with
+    | Pointer s -> s
+    | _ -> raise (Failure "cannot dereference expression")
+in
 (* Return a semantically-checked expression, i.e., with a type *)
 let rec check_expr symbol_table = function
       Literal l -> (Int, SLiteral l)
     | FloatLit l -> (Float, SFloatLit l)
     | BoolLit l -> (Bool, SBoolLit l)
-    | StringLit l -> (String, SStringLit l)
+    | StringLit l -> (String , SStringLit l)
     | Id var -> (type_of_identifier symbol_table var, SId var)
     | VariableInit(var_name, var_type, e) as ex -> (* var = Variable Name, t = Type, e = Expression *)
         let (right_hand_type, right_hand_expr) =  check_expr symbol_table e in
@@ -98,7 +115,8 @@ let rec check_expr symbol_table = function
         string_of_typ right_hand_type ^ " in " ^ string_of_expr ex in
         let _ = check_assign var_type right_hand_type err in
         ignore(Hashtbl.add symbol_table var_name var_type);  (* Add Variable to Hashtable *)
-      (var_type, SVariableInit(var_name, var_type, (check_expr symbol_table e))) (* Check if it is added properly *)
+      (var_type, SVariableInit(var_name, var_type, (check_expr symbol_table e)))
+    (*
     | Assign(var, e) as ex ->
       let lt = type_of_identifier symbol_table var
       and (rt, e') = check_expr symbol_table e in
@@ -106,6 +124,29 @@ let rec check_expr symbol_table = function
                 string_of_typ rt ^ " in " ^ string_of_expr ex
     in
       (check_assign lt rt err, SAssign(var, (rt, e')))
+    *)
+    | Assign (e1, e2) as ex ->
+        let t1, e1' = check_expr symbol_table e1 and (t2, e2') = check_expr symbol_table e2 in    
+        let err =
+             "illegal assignment " ^ string_of_typ t1 ^ " = " ^ string_of_typ t2
+              ^ " in " ^ string_of_expr ex
+             and vt =
+                match e1 with
+                | Id _ | Subscript (_, _) | Deref _ -> t1
+                 | _ -> raise (Failure "left expression is not assignable")
+             in
+             (check_assign t1 t2 err, SAssign ((vt, e1'), (t2, e2')))
+    | Unop(op, e) as ex -> 
+          let (t, e') = check_expr symbol_table e in
+          let ty = match op with
+            Neg when t = Int || t = Float -> t 
+          | Not when t = Bool -> Bool 
+          (*| Ampy when t = Int || t = Float || t = String -> t
+          | Bitty when t = Int || t = Float || t = String -> t *)
+          | _ -> raise (Failure ("illegal unary operator " ^ 
+                                 string_of_uop op ^ string_of_typ t ^
+                                 " in " ^ string_of_expr ex))
+          in (ty, SUnop(op, (t, e')))   
     | Binop(e1, op, e2) as e ->
       let (t1, e1') = check_expr symbol_table e1
       and (t2, e2') = check_expr symbol_table e2 in
@@ -116,16 +157,23 @@ let rec check_expr symbol_table = function
       (* All binary operators require operands of the same type*)
       if t1 = t2 then
         (* Determine expression type based on operator and operand types *)
-        let t = match op with
-            Add | Sub | Div | Mult when t1 = Int -> Int
-          | Add | Sub | Div | Mult when t1 = Float -> Float
-          | Equal | Neq -> Bool
-          | Less when t1 = Int -> Bool
+        let t = 
+        match op with
+          | Eq_Compar when t1 = t2 -> Bool
+          | Add | Sub | Div | Mult when t1 = Int -> Int
+          | Add | Sub | Div | Mult  when t1 = Float -> Float
+          | (Equal | Neq) -> Bool
+          | (Less | Leq | Greater | Geq) 
+             when t1 = Int || t1 = Float || is_pointer t1  -> Bool
           | And | Or when t1 = Bool -> Bool
-          | _ -> raise (Failure err)
+          (* pointer addition and subtraction *)
+          | (Add | Sub ) when is_pointer t1 && t2 = Int -> t1
+          | (Add | Sub ) when is_pointer t1 && t2 = Float -> t1
+          | _ -> raise(Failure err)
+            
         in
-        (t, SBinop((t1, e1'), op, (t2, e2')))
-      else raise (Failure err)
+          (t, SBinop ((t1, e1'), op, (t2, e2')))
+      else raise (Failure err)                   
     | Call(fname, args) as call ->
       let fd = find_func fname in
       let param_length = List.length fd.formals in
@@ -136,10 +184,28 @@ let rec check_expr symbol_table = function
               let (et, e') = check_expr symbol_table e in
               let err = "illegal argument found " ^ string_of_typ et ^
                         " expected " ^ string_of_typ ft ^ " in " ^ string_of_expr e
-              in (check_assign ft et err, e')
+              in (check_args ft et err, e')
         in
-        let args' = List.map2 check_call fd.formals args
-        in (fd.rtyp, SCall(fname, args'))
+      let args' = List.map2 check_call fd.formals args
+      in (fd.rtyp, SCall(fname, args'))
+      (* subscript main expr must be a pointer and the subscript must be integer *)
+    | Subscript (e, s) ->
+          let te, e' = check_expr symbol_table e and ts, s' = check_expr  symbol_table  s in
+          if ts != Int then raise (Failure "subscript expression not integral")
+          else
+            let ts =
+              match te with
+              | Pointer p -> p
+              | _ -> raise (Failure "main expression not a pointer")
+            in
+            (ts, SSubscript ((te, e'), (ts, s')))
+      | Refer s -> (Pointer (type_of_identifier symbol_table s), SRefer s)
+
+      | Deref e ->
+          let t, e' = check_expr symbol_table e in
+          if is_pointer t then (deref t, SDeref (t, e'))
+          else raise (Failure "cannot dereference expression")
+
   in
 
 let rec check_stmt_list curr_symbol_table  = function
@@ -157,6 +223,8 @@ and check_top_stmt curr_symbol_table = function
     | While(e, st) ->
       SWhile(check_bool_expr curr_symbol_table e, check_stmt_list curr_symbol_table st)
     | Return e -> raise (Failure ("return outside function" ))
+    (* | For(e1, e2,st) ->
+	    SFor(check_bool_expr curr_symbol_table e1,check_top_stmt curr_symbol_table e2, check_top_stmt curr_symbol_table st) *)
   and 
   check_bool_expr curr_symbol_table e =
     let (t, e') = check_expr curr_symbol_table e in
@@ -178,12 +246,7 @@ and check_top_stmt curr_symbol_table = function
       (* *)
     in
     ignore(build_local_symbol_table local_symbol_table func.formals);
-    (* Build local symbol table of variables for this function 
-    let local_symbols = List.fold_left (fun m (name, ty) -> Hashtbl.add name ty m)
-        (* StringMap.empty (globals @ func.formals @ func.locals ) *)
-        curr_symbol_table (func.formals)
-    in
-    *)
+
     let rec check_func_statements = function
       [] -> []
     | Return e :: sl -> let (t, e') = check_expr local_symbol_table e in
