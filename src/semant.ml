@@ -85,8 +85,8 @@ let check_assign lvaluet rvaluet err =
       match lvaluet with
       | Pointer None ->
           if is_pointer rvaluet then rvaluet else raise (Failure err)
-      | Pointer _ ->
-          if rvaluet = Pointer None || rvaluet = lvaluet then lvaluet
+      | Pointer p_typ ->
+          if rvaluet = Pointer None || rvaluet = p_typ then lvaluet
             else raise (Failure err)
       | _ -> if lvaluet = rvaluet then lvaluet else raise (Failure err)
   in
@@ -110,7 +110,6 @@ let rec check_expr symbol_table = function
     | StringLit l -> (String , SStringLit l)
     (*| New(t) -> (Int, SNew t )
     | Null -> (Pointer None, SNull ) *)
-    | Noexpr -> (None, SNoexpr)
     | Id var -> (type_of_identifier symbol_table var, SId var)
     | VariableInit(var_name, var_type, e) as ex -> (* var = Variable Name, t = Type, e = Expression *)
         let (right_hand_type, right_hand_expr) =  check_expr symbol_table e in

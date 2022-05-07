@@ -52,7 +52,6 @@ decls:
 /* Variable Declaraiton */
 vdecl:
   ID COLON typ { ($1, $3) } /* x: int */
-  /*ID COLON LPAREN MULT typ RPAREN{ ($1, $5) } /* x: *int = 50 */ 
 
 typ:
   INT   { Int }
@@ -60,7 +59,7 @@ typ:
   | FLOAT  { Float }
   | STRING { String }
   | NONE { None }
-  | typ MULT{Pointer($1)}
+  | MULT typ{Pointer($2)}
 
 /* fdecl 
 def main(x: int, y: int) -> None:
@@ -94,19 +93,12 @@ stmt:
     expr NEWLINE                            { Expr $1 }
   | expr EOF                                { Expr $1 }
   | LBRACE stmt_list RBRACE                 { Block $2 }
-  /* if (condition): /n stmt else /n stmt */
   | IF LPAREN expr RPAREN COLON NEWLINE INDENT stmt_list DEDENT ELSE COLON NEWLINE INDENT stmt_list DEDENT   { If($3, $8, $14) }
   | WHILE LPAREN expr RPAREN COLON NEWLINE INDENT stmt_list DEDENT { While ($3, $8)  }
   /*| FOR expr_opt IN stmt COLON NEWLINE stmt {For($2,$4, $7 )} */
   /* return */
   | RETURN expr NEWLINE                     { Return $2   }
   | RETURN expr EOF                         { Return $2   }
-
-/* 
-expr_opt:
-     { Noexpr }
-  | expr          { $1 }
-*/
 
 expr:
     INT_LITERAL      { Literal($1)            }
@@ -130,7 +122,7 @@ expr:
   | BIT_AND ID { Refer $2 }
   | expr LBRACKET expr RBRACKET {Subscript($1, $3)}
   | expr EQ expr   { Assign($1, $3) }
-  | ID COLON typ EQ expr { VariableInit($1, $3, $5) } /* Variable Declaration */ 
+  | ID COLON typ EQ expr { VariableInit($1, $3, $5) } /* Variable Initialization */ 
   /* call */
   | ID LPAREN args_opt RPAREN { Call ($1, $3)  } /* args_opt = List of Arguments */
 

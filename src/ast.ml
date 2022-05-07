@@ -24,9 +24,7 @@ type expr =
   | Deref of expr
   | Refer of string
   | Assign of expr * expr
-  (*| New of typ *)
-  | Noexpr
-  
+  (*| New of typ *)  
 
 (* Defining what statements can be *)
 type stmt =
@@ -89,7 +87,7 @@ let rec string_of_typ = function
   | Float -> "float"
   | String -> "String"
   | None -> "None"
-  | Pointer t ->  string_of_typ t ^"*"
+  | Pointer t ->  "Pointer: *" ^ string_of_typ t 
 
   let string_of_uop = function
     Neg -> "-"
@@ -112,10 +110,9 @@ let rec string_of_expr = function
   | Call(f, el) ->
       f ^ "(" ^ String.concat ", " (List.map string_of_expr el) ^ ")"
   | Subscript (e, s) -> string_of_expr e ^ "[" ^ string_of_expr s ^ "]"
-  | Deref e ->  "*" ^ string_of_expr e
-  | Refer s -> "&"^ s
+  | Deref e ->  "Deref: *" ^ string_of_expr e
+  | Refer s -> "Refer: &"^ s
   (*| New(t) -> "new(" ^ string_of_typ t ^ ")\n" *)
-  | Noexpr -> " "
 
 let rec string_of_stmt = function
   Block(stmts) ->

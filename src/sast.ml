@@ -22,7 +22,6 @@ and sx =
   | SRefer of string
   | SDeref of sexpr
   (*| SNew of typ *)
-  | SNoexpr
 
 
 type sstmt =
@@ -67,10 +66,11 @@ let rec string_of_sexpr (t, e) =
       (* | SCast(e,t) -> "st" *)
       | SSubscript (e, s) -> string_of_sexpr e ^ "[" ^ string_of_sexpr s ^ "]"
       (* | SNew(t) ->  "new(" ^ string_of_typ t ^ ")\n" *)
-      | SRefer s -> "&" ^ s
-      | SDeref e -> "*" ^ string_of_sexpr e
-      | SNoexpr -> "" )
-      ^ ")"
+      | SRefer s -> "SRefer: &" ^ s
+      | SDeref e -> "SDeref: *" ^ string_of_sexpr e
+    ) ^ ")"
+
+  
 let rec string_of_sstmt = function
     SBlock(stmts) ->
     "SBlock: {\n" ^ String.concat "" (List.map string_of_sstmt stmts) ^ "}\n"

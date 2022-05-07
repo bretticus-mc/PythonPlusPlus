@@ -84,7 +84,7 @@ in
     | SBoolLit b  -> L.const_int i1_t (if b then 1 else 0) 
     | SFloatLit l -> L.const_float_of_string float_t l
     | SStringLit s -> L.build_global_stringptr s "str" builder
-    | SNoexpr ->     L.const_int i32_t 0
+    (* | SNoexpr ->     L.const_int i32_t 0 *)
     | SId s       -> L.build_load (lookup curr_symbol_table s) s builder
     (* special handling for deref expr, subscript expr, and malloc *)
     | SAssign (e1, e2) ->
@@ -115,29 +115,44 @@ in
           in
           e
     | SVariableInit(var_name, var_typ, s_expr) -> let s_expr' = build_expr curr_symbol_table builder s_expr in
-      let var_allocation = L.build_alloca (ltype_of_typ var_typ) var_name builder
-      in
-      ignore(Hashtbl.add curr_symbol_table var_name var_allocation);
-      ignore(L.build_store s_expr' var_allocation builder); s_expr' (* TODO: Should s_expr' be return value? *)
-    
+      let _ = (match var_typ with 
+        Pointer(s) -> 
+          let malloc = L.build_array_malloc vpoint_t s_expr' "malloc" builder
+          in 
+          let bitcast = L.build_bitcast malloc (ltype_of_typ var_typ) "pointer_init" builder
+          in
+          let var_allocation = L.build_alloca (ltype_of_typ var_typ) var_name builder
+          in 
+          ignore(Hashtbl.add curr_symbol_table var_name var_allocation);
+          ignore(L.build_store bitcast var_allocation builder);
+          let var_load = L.build_load var_allocation var_name builder
+          in
+          L.build_store s_expr' var_load builder;
+        | _ ->
+          let var_allocation = L.build_alloca (ltype_of_typ var_typ) var_name builder
+          in
+          ignore(Hashtbl.add curr_symbol_table var_name var_allocation);
+          L.build_store s_expr' var_allocation builder
+      ) in
+      s_expr';
     | SBinop ((A.Float,_ ) as e1, op, e2) ->
 	      let e1' = build_expr curr_symbol_table builder e1
-	  and e2' = build_expr curr_symbol_table builder e2 in
-	  (match op with 
-	    A.Add     -> L.build_fadd
-	  | A.Sub     -> L.build_fsub
-	  | A.Mult    -> L.build_fmul
-	  | A.Div     -> L.build_fdiv
-    | A.Eq_Compar -> L.build_fcmp L.Fcmp.Oeq (* Not sure on this *)
-	  | A.Equal   -> L.build_fcmp L.Fcmp.Oeq
-	  | A.Neq     -> L.build_fcmp L.Fcmp.One
-	  | A.Less    -> L.build_fcmp L.Fcmp.Olt
-    | A.Leq -> L.build_fcmp L.Fcmp.Ole
-    | A.Greater -> L.build_fcmp L.Fcmp.Ogt
-    | A.Geq -> L.build_fcmp L.Fcmp.Oge
-	  | A.And | A.Or ->
-	      raise (Failure "internal error: semant should have rejected and/or on float")
-	  ) e1' e2' "tmp" builder
+        and e2' = build_expr curr_symbol_table builder e2 in
+        (match op with 
+          A.Add     -> L.build_fadd
+        | A.Sub     -> L.build_fsub
+        | A.Mult    -> L.build_fmul
+        | A.Div     -> L.build_fdiv
+        | A.Eq_Compar -> L.build_fcmp L.Fcmp.Oeq (* Not sure on this *)
+        | A.Equal   -> L.build_fcmp L.Fcmp.Oeq
+        | A.Neq     -> L.build_fcmp L.Fcmp.One
+        | A.Less    -> L.build_fcmp L.Fcmp.Olt
+        | A.Leq -> L.build_fcmp L.Fcmp.Ole
+        | A.Greater -> L.build_fcmp L.Fcmp.Ogt
+        | A.Geq -> L.build_fcmp L.Fcmp.Oge
+        | A.And | A.Or ->
+            raise (Failure "internal error: semant should have rejected and/or on float")
+        ) e1' e2' "tmp" builder
     | SBinop (((A.Int, _) as e1), op, e2)
       |SBinop (((A.Bool, _) as e1), op, e2) ->
           let e1' = build_expr curr_symbol_table builder e1 
@@ -192,11 +207,11 @@ in
             L.build_in_bounds_gep s' (Array.of_list [i']) "gep" builder
           in
           L.build_load e "deref" builder
-      | SDeref s -> L.build_load (build_expr curr_symbol_table builder s) "deref" builder
-      | SRefer s -> lookup  curr_symbol_table s
-      | SCall ("new", [e]) ->
+    | SDeref s -> L.build_load (build_expr curr_symbol_table builder s) "deref" builder
+    | SRefer s -> lookup  curr_symbol_table s
+    | SCall ("new", [e]) ->
           L.build_array_malloc vpoint_t (build_expr curr_symbol_table builder e) "new" builder
-      | SCall ("print", [e]) ->
+    | SCall ("print", [e]) ->
          let int_format_str = L.build_global_stringptr "%d\n" "fmt" builder in
           (* L.build_call printf_func [|(build_expr curr_symbol_table builder e);|] *)
           L.build_call printf_func [| int_format_str ; (build_expr curr_symbol_table builder e) |]
@@ -205,8 +220,8 @@ in
           (* L.build_call printf_func [|(build_expr curr_symbol_table builder e);|] *)
           L.build_call printf_func [| (build_expr curr_symbol_table builder e) |]
           "prints" builder
-      | SCall ("malloc", [e]) ->
-          L.build_array_malloc vpoint_t (build_expr curr_symbol_table builder e) "malloc" builder
+      (*| SCall ("malloc", [e]) ->
+          L.build_array_malloc vpoint_t (build_expr curr_symbol_table builder e) "malloc" builder *)
       | SCall ("free", [e]) ->
           L.build_free (build_expr curr_symbol_table builder e) builder
       | SCall (f, args) ->
