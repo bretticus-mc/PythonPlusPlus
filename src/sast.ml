@@ -84,7 +84,7 @@ let rec string_of_sstmt = function
 
 let string_of_sfdecl fdecl =
   "def " ^ fdecl.sfname ^ "(" ^ 
-  String.concat ", " (List.map fst fdecl.sformals) ^
+  String.concat ", " (List.map (fun f -> "Arg_name:("^ (fst f) ^ ") Arg_Type:(" ^ (string_of_typ (snd f)) ^") ") fdecl.sformals) ^ 
   ") -> " ^ string_of_typ fdecl.srtyp ^ ": \n" ^
   String.concat "" (List.map string_of_sstmt fdecl.sbody) ^
   "\n"

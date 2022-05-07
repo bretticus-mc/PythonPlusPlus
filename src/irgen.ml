@@ -73,7 +73,6 @@ in
   (* Return the value for a variable or formal argument.
       Check local names first, then global names *)
   let lookup symbol_table var_name = try Hashtbl.find symbol_table var_name
-    (* with Not_found -> StringMap.find n global_vars *)
     with Not_found -> raise (Failure ("can't find variable"))
   in
 
@@ -84,17 +83,10 @@ in
     | SBoolLit b  -> L.const_int i1_t (if b then 1 else 0) 
     | SFloatLit l -> L.const_float_of_string float_t l
     | SStringLit s -> L.build_global_stringptr s "str" builder
-    (* | SNoexpr ->     L.const_int i32_t 0 *)
     | SId s       -> L.build_load (lookup curr_symbol_table s) s builder
     (* special handling for deref expr, subscript expr, and malloc *)
     | SAssign (e1, e2) ->
-          let t1, s1 = e1 and _, s2 = e2 and e2' = build_expr curr_symbol_table builder e2 in
-          let e2' =
-            match s2 with
-            | SCall ("malloc", [_])  ->
-                L.build_bitcast e2' (ltype_of_typ t1) "vpcast" builder
-            | _ -> e2'
-          in
+          let t1, s1 = e1 and e2' = build_expr curr_symbol_table builder e2 in
           let e =
             match s1 with
             | SId s ->
@@ -209,25 +201,22 @@ in
           L.build_load e "deref" builder
     | SDeref s -> L.build_load (build_expr curr_symbol_table builder s) "deref" builder
     | SRefer s -> lookup  curr_symbol_table s
-    | SCall ("new", [e]) ->
-          L.build_array_malloc vpoint_t (build_expr curr_symbol_table builder e) "new" builder
     | SCall ("print", [e]) ->
          let int_format_str = L.build_global_stringptr "%d\n" "fmt" builder in
-          (* L.build_call printf_func [|(build_expr curr_symbol_table builder e);|] *)
           L.build_call printf_func [| int_format_str ; (build_expr curr_symbol_table builder e) |]
            "printf" builder
       | SCall ("prints", [e]) ->
-          (* L.build_call printf_func [|(build_expr curr_symbol_table builder e);|] *)
           L.build_call printf_func [| (build_expr curr_symbol_table builder e) |]
           "prints" builder
-      (*| SCall ("malloc", [e]) ->
-          L.build_array_malloc vpoint_t (build_expr curr_symbol_table builder e) "malloc" builder *)
       | SCall ("free", [e]) ->
           L.build_free (build_expr curr_symbol_table builder e) builder
       | SCall (f, args) ->
         let (fdef, fdecl) = StringMap.find f function_decls in
         let llargs = List.rev (List.map (build_expr curr_symbol_table builder) (List.rev args)) in
-        let result = f ^ "_result" in
+        let result  = (match (fdecl.srtyp) with 
+          None -> "" 
+          | _ -> f ^ "_result")
+        in
         L.build_call fdef (Array.of_list llargs) result builder
   in
 

@@ -96,11 +96,11 @@ let rec string_of_typ = function
   | Ampy -> "&"*)
   
 let rec string_of_expr = function
-    Literal(l) -> string_of_int l
-  | FloatLit(l) -> l
+    Literal(l) -> "IntLit: " ^ string_of_int l
+  | FloatLit(l) -> "FloatLit: " ^ l
   | BoolLit(b) -> if b then "True" else "False"
-  | StringLit(s) -> s 
-  | Id(s) -> s
+  | StringLit(s) -> "String: " ^ s 
+  | Id(s) -> "Id: " ^ s
   | Binop(e1, o, e2) ->
     string_of_expr e1 ^ " " ^ string_of_op o ^ " " ^ string_of_expr e2
   | Assign(v, e) -> string_of_expr v ^ " = " ^ string_of_expr e
@@ -127,7 +127,7 @@ let rec string_of_stmt = function
 
 let string_of_fdecl fdecl =
     "def " ^ fdecl.fname ^ "(" ^ 
-    String.concat ", " (List.map fst fdecl.formals) ^
+    String.concat ", " (List.map (fun f -> "Arg_name:("^ (fst f) ^ ") Arg_Type:(" ^ (string_of_typ (snd f)) ^") ") fdecl.formals) ^ 
     ") -> " ^ string_of_typ fdecl.rtyp ^ ": \n" ^
     String.concat "" (List.map string_of_stmt fdecl.body)
 

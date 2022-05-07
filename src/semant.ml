@@ -10,8 +10,7 @@ let var_map = Hashtbl.create 12345
 
 (* Semantic checking of the AST. Returns an SAST if successful,
    throws an exception if something is wrong.
-
-   Check each global variable, then check each function declaration *)
+ *)
 
 (* code = func_def and stmnt list *)
 let check (code) =
@@ -42,21 +41,21 @@ let check (code) =
  (*                              ("printb", Bool);
                                ("printf", Float);
                                ("prints", String); *)
-                               ("free", Pointer(None), None)
+                               ("free", Pointer(Int), None)
                                ] 
     (* Add the key: "print" and value: Function Definition *)
   in
 
   (* Add function name to symbol table *)
-  let add_func map fd =
-    let built_in_err = "function " ^ fd.fname ^ " may not be defined"
-    and dup_err = "duplicate function " ^ fd.fname
+  let add_func map function_def =
+    let built_in_err = "function " ^ function_def.fname ^ " may not be defined"
+    and dup_err = "duplicate function " ^ function_def.fname
     and make_err er = raise (Failure er)
-    and n = fd.fname (* Name of the function *)
-    in match fd with (* No duplicate functions or redefinitions of built-ins *)
+    and n = function_def.fname (* Name of the function *)
+    in match function_def with (* No duplicate functions or redefinitions of built-ins *)
       _ when StringMap.mem n built_in_decls -> make_err built_in_err
     | _ when StringMap.mem n map -> make_err dup_err
-    | _ ->  StringMap.add n fd map
+    | _ ->  StringMap.add n function_def map
   in
 
   (* Build symbol table *)
@@ -89,6 +88,9 @@ let check_assign lvaluet rvaluet err =
       | _ -> if lvaluet = rvaluet then lvaluet else raise (Failure err)
   in
   typ
+in
+let check_args lvaluet rvaluet err = 
+  if lvaluet = rvaluet then lvaluet else raise (Failure err)
 in
 (* Return a variable from our local symbol table *)
 let type_of_identifier symbol_table s =
@@ -182,10 +184,10 @@ let rec check_expr symbol_table = function
               let (et, e') = check_expr symbol_table e in
               let err = "illegal argument found " ^ string_of_typ et ^
                         " expected " ^ string_of_typ ft ^ " in " ^ string_of_expr e
-              in (check_assign ft et err, e')
+              in (check_args ft et err, e')
         in
-        let args' = List.map2 check_call fd.formals args
-        in (fd.rtyp, SCall(fname, args'))
+      let args' = List.map2 check_call fd.formals args
+      in (fd.rtyp, SCall(fname, args'))
       (* subscript main expr must be a pointer and the subscript must be integer *)
     | Subscript (e, s) ->
           let te, e' = check_expr symbol_table e and ts, s' = check_expr  symbol_table  s in
