@@ -1,6 +1,6 @@
 type op = Add | Sub | Mult | Div | Equal | Neq | Less | Greater | And | Or | Eq_Compar
 
-type typ = Int | Bool | Float | String | None | Array of typ  (*StringArray of typ*)
+type typ = Int | Bool | Float | String | None | Array of typ * int  (*StringArray of typ*)
 
 (* Defining what expressions can be *)
 type expr =
@@ -70,7 +70,7 @@ let rec string_of_typ = function
   | Float -> "float"
   | String -> "String"
   | None -> "None"
-  | Array(t) -> "List[" ^ string_of_typ t ^ "]"
+  | Array(t, n) -> (string_of_typ t) ^ "[" ^ (string_of_int n) ^ "]"
   
 let rec string_of_expr = function
     Literal(l) -> string_of_int l

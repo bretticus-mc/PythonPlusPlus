@@ -58,7 +58,7 @@ typ:
   | FLOAT  { Float }
   | STRING { String }
   | NONE { None }
-  | LIST LBRACKET typ RBRACKET  { Array($3) }
+  | LIST LBRACKET typ COMMA INT_LITERAL RBRACKET  { Array($3, $5) }
 
 /* fdecl 
 def main(x: int, y: int) -> None:
@@ -126,7 +126,7 @@ expr:
   | ID LBRACKET expr RBRACKET EQ expr { ListIndAssign($1, $3, $6) }
 
 list_lit:
-  LBRACKET args RBRACKET { ListLiteral($2) }
+  LBRACKET args_opt RBRACKET { ListLiteral($2) }
 
 /* args_opt*/
 args_opt:

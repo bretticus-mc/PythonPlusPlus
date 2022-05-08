@@ -46,14 +46,8 @@ let translate (code: Sast.scode list) =
     | A.None  -> none_t 
     | A.Float -> float_t
     | A.String -> string_t
-    | A.Array(t) ->  L.array_type (ltype_of_typ t) 3
-  in
-
-
-
-
-    (* array functions *)
-  
+    | A.Array(t, n) ->  L.array_type (ltype_of_typ t) n
+  in  
 
 
   (* Create a map of global variables after creating each 
@@ -130,47 +124,21 @@ let translate (code: Sast.scode list) =
      (* L.build_call printf_func [|(build_expr curr_symbol_table builder e);|] *)
       L.build_call printf_func [| int_format_str ; (build_expr curr_symbol_table builder e) |]
         "printf" builder
+    | SCall ("prints", [e]) ->
+      L.build_call printf_func [| (build_expr curr_symbol_table builder e) |]
+      "prints" builder
+    | SCall ("printf", [e]) ->
+      L.build_call printf_func [| (build_expr curr_symbol_table builder e) |]
+      "printf" builder
     | SCall (f, args) ->
       let (fdef, fdecl) = StringMap.find f function_decls in
       let llargs = List.rev (List.map (build_expr curr_symbol_table builder) (List.rev args)) in
       let result = f ^ "_result" in
       L.build_call fdef (Array.of_list llargs) result builder
-    | SListLiteral(literals) ->
-      let av = List.map(fun el -> snd(el)) literals in
-      (match e_type with
-        A.Array(A.Int) -> 
-          let listvals vals = 
-            match vals with
-          SLiteral(v) -> v
-          | _ -> 0
-         in
-        let v = List.map listvals av in
-        let values = List.map(L.const_int i32_t) v in
-
-        L.const_array i32_t (Array.of_list values)
-      | A.Array(A.String) ->
-        let listvals vals = 
-          match vals with
-        SStringLit(v) -> v
-        | _ -> ""
-        in
-        let v = List.map listvals av in
-        let sexprList = List.map (fun e -> (A.String, SStringLit(e))) v in
-        let values = List.map (fun f -> build_expr curr_symbol_table builder f) sexprList in
-        L.const_array string_t (Array.of_list values)
-      |_ -> raise (Failure ("no type"))
-
-      )
-
-      
-      (*| A.Array(A.Float) -> 
-        let v = List.map extractFValues arrayValues in
-        let values = List.map(L.const_float float_t) v in
-        (*in let reversed_v = List.rev values in*)
-        L.const_array float_t (Array.of_list values)
-      )*)
-      
-
+    | SListLiteral list  ->
+      let first_elem = fst (List.hd list) in
+      let v = Array.map (fun e -> build_expr curr_symbol_table builder e) (Array.of_list list) in
+      (L.const_array (ltype_of_typ first_elem) v) 
     | SListAccess(id, index) ->
       let ind = (build_expr curr_symbol_table builder index)
       in let value = L.build_gep (lookup curr_symbol_table id) [| (L.const_int i32_t 0); ind |] "tmp" builder

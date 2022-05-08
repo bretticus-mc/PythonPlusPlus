@@ -1,4 +1,4 @@
-h : List[int] = [1,2,3]
+h : List[int, 3] = [1,2,3]
 y : int = h[0]
 z : int = h[1]
 w : int = h[2]
@@ -15,3 +15,8 @@ w : int = h[2]
 print(y)
 print(z)
 print(w)
+
+x : List[String, 3] = ["hello", "hi", "hola"]
+x[2] = "world"
+i : String = x[2]
+prints(i)

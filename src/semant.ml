@@ -144,15 +144,16 @@ let rec check_expr symbol_table = function
         let args' = List.map2 check_call fd.formals args
         in (fd.rtyp, SCall(fname, args'))
     | ListLiteral values ->
-      (*let length = List.length values in*)
-      let l' = List.map (check_expr symbol_table) values in
-      let rec ct = function
-          [] -> (Array(None), SListLiteral(l'))
-        | (t1, _) :: [] -> (Array(t1), SListLiteral(l'))
-        |	((t1,_) :: (t2,_) :: _) when t1 != t2 ->  
-        raise (Failure ("Error: not allowed to have list types " ^ string_of_typ t1 ^ " and " ^ string_of_typ t2 ^ "together" ))
-        | _ :: t -> ct t
-        in ct l'
+      let check_types e (e1, _) = 
+        if e != e1 then raise (Failure ("Different types not allowed in the same list")) 
+        else e1
+      and l' = List.map (check_expr symbol_table) values in
+        (match l' with
+        [] -> raise (Failure "empty literals not allowed")
+      | _ -> 
+        let first_elem = List.fold_left check_types (fst (List.hd l')) l' in 
+        (Array(first_elem, List.length l'), SListLiteral(l')) )
+
     | ListAccess(l, i) ->
       let lt = (type_of_identifier symbol_table l)
       in let v = check_expr symbol_table i in (lt, SListAccess(l, v))
