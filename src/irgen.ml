@@ -12,14 +12,13 @@
 
 *)
 
+
 module L = Llvm
 module A = Ast
 open Sast
 
 module StringMap = Map.Make(String)
 let var_map = Hashtbl.create 12345
-
-
 
 
 (* translate : Sast.program -> Llvm.module *)
@@ -29,6 +28,7 @@ let translate (code: Sast.scode list) =
   (* Create the LLVM compilation module into which
      we will generate code *)
   let the_module = L.create_module context "PythonPP" in
+
   (* Get types from the context *)
   let i32_t      = L.i32_type    context (* 32-bit int type *)
   and i8_t       = L.i8_type     context (* Characters *)
@@ -36,33 +36,22 @@ let translate (code: Sast.scode list) =
   and float_t    = L.double_type context (* Double/Float type *)
   and string_t   = L.pointer_type   (L.i8_type context) (* String type *)
   and none_t     = L.void_type   context in 
-  
+  let vpoint_t   = L.pointer_type i8_t
 
+in
 
   (* Return the LLVM type for a PythonPP type *)
   let rec ltype_of_typ = function
-    A.Int   -> i32_t
+      A.Int   -> i32_t
     | A.Bool  -> i1_t
     | A.None  -> none_t 
     | A.Float -> float_t
     | A.String -> string_t
+    | A.Pointer p ->
+        if p == A.None then vpoint_t else L.pointer_type (ltype_of_typ p)
     | A.Array(t, n) ->  L.array_type (ltype_of_typ t) n
-  in  
 
-
-  (* Create a map of global variables after creating each 
-  let global_vars : L.llvalue StringMap.t =
-    let global_var m (t, n) =
-      let init = L.const_int (ltype_of_typ t) 0
-      in StringMap.add n (L.define_global n init the_module) m in
-    List.fold_left global_var StringMap.empty globals in
-  *)
- 
- 
-  let printf_t : L.lltype =
-    L.var_arg_function_type i32_t [| L.pointer_type i8_t |] in
-  let printf_func : L.llvalue =
-    L.declare_function "printf" printf_t the_module in
+  in
 
   (* Define each function (arguments and return type) so we can
      call it even before we've created its body *)
@@ -78,82 +67,176 @@ let translate (code: Sast.scode list) =
       | SStmt(stmt) -> map
       in
     List.fold_left func_decl_intermediary StringMap.empty code in
+  let printf_t : L.lltype =
+    L.var_arg_function_type i32_t [| L.pointer_type i8_t |] in
+  let printf_func : L.llvalue =
+    L.declare_function "printf" printf_t the_module in
 
   (* Return the value for a variable or formal argument.
       Check local names first, then global names *)
   let lookup symbol_table var_name = try Hashtbl.find symbol_table var_name
-    (* with Not_found -> StringMap.find n global_vars *)
     with Not_found -> raise (Failure ("can't find variable"))
   in
- 
 
-  
+ 
   (* Construct code for an expression; return its value *)
-  let rec build_expr curr_symbol_table builder ((e_type, e) : sexpr) = match e with
-    SLiteral i  -> L.const_int i32_t i
-(*  | SStringLit s -> *)
+  let rec build_expr curr_symbol_table builder ((_, e) : sexpr) = match e with
+     SLiteral i  -> L.const_int i32_t i
+    | SBoolLit b  -> L.const_int i1_t (if b then 1 else 0) 
     | SFloatLit l -> L.const_float_of_string float_t l
     | SStringLit s -> L.build_global_stringptr s "str" builder
-    | SBoolLit b  -> L.const_int i1_t (if b then 1 else 0)
     | SId s       -> L.build_load (lookup curr_symbol_table s) s builder
-    | SAssign (s, e) -> let e' = build_expr curr_symbol_table builder e in
-      ignore(L.build_store e' (lookup curr_symbol_table s) builder); e'
+    (* special handling for deref expr, subscript expr, and malloc *)
+    | SAssign (e1, e2) ->
+          let t1, s1 = e1 and e2' = build_expr curr_symbol_table builder e2 in
+          let e =
+            match s1 with
+            | SId s ->
+                ignore (L.build_store e2' (lookup curr_symbol_table  s) builder);
+              e2'
+           (*| SSubscript (s, i) ->
+                let e1' =
+                  let s' = build_expr curr_symbol_table builder s and i' = build_expr curr_symbol_table builder i in
+                  L.build_in_bounds_gep s' (Array.of_list [i']) "tmp" builder
+                in
+                ignore (L.build_store e2' e1' builder) ;
+                e2'*)
+            | SDeref s ->
+                let e1' = build_expr curr_symbol_table builder s in
+                ignore (L.build_store e2' e1' builder) ;
+                e2'
+            | _ -> raise (Failure "error: failed to assign value")
+          in
+          e
     | SVariableInit(var_name, var_typ, s_expr) -> let s_expr' = build_expr curr_symbol_table builder s_expr in
-      let var_allocation = L.build_alloca (ltype_of_typ var_typ) var_name builder
-      in
-      ignore(Hashtbl.add curr_symbol_table var_name var_allocation);
-      ignore(L.build_store s_expr' var_allocation builder); s_expr' (* TODO: Should s_expr' be return value? *)
-    | SBinop (e1, op, e2) ->
-      let e1' = build_expr curr_symbol_table builder e1
-      and e2' = build_expr curr_symbol_table builder e2 in
-      (match op with
-        A.Add     -> L.build_add
-      | A.Sub     -> L.build_sub
-      | A.And     -> L.build_and
-      | A.Or      -> L.build_or
-      | A.Equal   -> L.build_icmp L.Icmp.Eq
-      | A.Neq     -> L.build_icmp L.Icmp.Ne
-      | A.Less    -> L.build_icmp L.Icmp.Slt
-      | A.Mult    -> L.build_fmul
-      | A.Div     -> L.build_fdiv
-      | A.Eq_Compar -> L.build_fcmp L.Fcmp.Oeq (* Not sure on this *)
-      | A.Greater -> L.build_fcmp L.Fcmp.Ogt
-      ) e1' e2' "tmp" builder
+      let _ = (match var_typ with 
+        Pointer(s) -> 
+          let malloc = L.build_array_malloc vpoint_t s_expr' "malloc" builder
+          in 
+          let bitcast = L.build_bitcast malloc (ltype_of_typ var_typ) "pointer_init" builder
+          in
+          let var_allocation = L.build_alloca (ltype_of_typ var_typ) var_name builder
+          in 
+          ignore(Hashtbl.add curr_symbol_table var_name var_allocation);
+          ignore(L.build_store bitcast var_allocation builder);
+          let var_load = L.build_load var_allocation var_name builder
+          in
+          L.build_store s_expr' var_load builder;
+        | _ ->
+          let var_allocation = L.build_alloca (ltype_of_typ var_typ) var_name builder
+          in
+          ignore(Hashtbl.add curr_symbol_table var_name var_allocation);
+          L.build_store s_expr' var_allocation builder
+      ) in
+      s_expr';
+    | SBinop ((A.Float,_ ) as e1, op, e2) ->
+	      let e1' = build_expr curr_symbol_table builder e1
+        and e2' = build_expr curr_symbol_table builder e2 in
+        (match op with 
+          A.Add     -> L.build_fadd
+        | A.Sub     -> L.build_fsub
+        | A.Mult    -> L.build_fmul
+        | A.Div     -> L.build_fdiv
+        | A.Eq_Compar -> L.build_fcmp L.Fcmp.Oeq (* Not sure on this *)
+        | A.Equal   -> L.build_fcmp L.Fcmp.Oeq
+        | A.Neq     -> L.build_fcmp L.Fcmp.One
+        | A.Less    -> L.build_fcmp L.Fcmp.Olt
+        | A.Leq -> L.build_fcmp L.Fcmp.Ole
+        | A.Greater -> L.build_fcmp L.Fcmp.Ogt
+        | A.Geq -> L.build_fcmp L.Fcmp.Oge
+        | A.And | A.Or ->
+            raise (Failure "internal error: semant should have rejected and/or on float")
+        ) e1' e2' "tmp" builder
+    | SBinop (((A.Int, _) as e1), op, e2)
+      |SBinop (((A.Bool, _) as e1), op, e2) ->
+          let e1' = build_expr curr_symbol_table builder e1 
+          and e2' = build_expr curr_symbol_table builder e2 in
+          ( match op with
+          | A.Add     -> L.build_add
+          | A.Sub     -> L.build_sub
+          | A.Mult    -> L.build_fmul
+          | A.Div     -> L.build_sdiv
+          | A.And     -> L.build_and
+          | A.Or      -> L.build_or
+          | A.Eq_Compar -> L.build_icmp L.Icmp.Eq (* No binop version on LLVM *)
+          | A.Equal   -> L.build_icmp L.Icmp.Eq
+          | A.Neq     -> L.build_icmp L.Icmp.Ne
+          | A.Less    -> L.build_icmp L.Icmp.Slt
+          | A.Greater -> L.build_icmp L.Icmp.Sgt
+          | A.Geq -> L.build_icmp L.Icmp.Sge 
+          | A.Leq -> L.build_icmp L.Icmp.Sle
+          ) e1' e2' "tmp" builder
+    | SUnop(op, ((t, _) as e)) ->
+          let e' = build_expr curr_symbol_table builder e in
+	        (match op with
+	        | A.Neg when t = A.Float -> L.build_fneg 
+	        | A.Neg   -> L.build_neg
+          | A.Not  -> L.build_not) 
+             e' "tmp" builder
+    | SBinop (s, op, ((A.Int, _) as i)) ->
+        let s' = build_expr curr_symbol_table builder s in
+        let i' = 
+        match op with
+            | A.Add -> build_expr curr_symbol_table builder i
+            | A.Sub -> build_expr curr_symbol_table builder (A.Int, SUnop (A.Neg, i))
+            | _ -> raise (Failure "error: invalid pointer manipulation")
+          in
+          L.build_in_bounds_gep s' (Array.of_list [i']) "tmp" builder
+    (* pointer comparison *)
+      | SBinop (p1, op, p2) ->
+          let p1' = build_expr curr_symbol_table builder p1 and p2' = build_expr curr_symbol_table builder p2 in
+          ( match op with
+          | A.Equal -> L.build_icmp L.Icmp.Eq
+          | A.Neq -> L.build_icmp L.Icmp.Ne
+          | A.Less -> L.build_icmp L.Icmp.Slt
+          | A.Leq -> L.build_icmp L.Icmp.Sle
+          | A.Greater -> L.build_icmp L.Icmp.Sgt
+          | A.Geq -> L.build_icmp L.Icmp.Sge
+          | _ -> raise (Failure "error: invalid pointer comparison") )
+            p1' p2' "tmp" builder
+
+      | SSubscript (s, i) ->
+          let e =
+            let s' = build_expr curr_symbol_table builder s and i' = build_expr curr_symbol_table builder i in
+            L.build_in_bounds_gep s' (Array.of_list [i']) "gep" builder
+          in
+          L.build_load e "deref" builder
+    | SDeref s -> L.build_load (build_expr curr_symbol_table builder s) "deref" builder
+    | SRefer s -> lookup  curr_symbol_table s
     | SCall ("print", [e]) ->
-      let int_format_str = L.build_global_stringptr "%d\n" "fmt" builder in
-     (* L.build_call printf_func [|(build_expr curr_symbol_table builder e);|] *)
-      L.build_call printf_func [| int_format_str ; (build_expr curr_symbol_table builder e) |]
-        "printf" builder
-    | SCall ("prints", [e]) ->
-      L.build_call printf_func [| (build_expr curr_symbol_table builder e) |]
-      "prints" builder
-    | SCall ("printf", [e]) ->
-      L.build_call printf_func [| (build_expr curr_symbol_table builder e) |]
-      "printf" builder
-    | SCall (f, args) ->
-      let (fdef, fdecl) = StringMap.find f function_decls in
-      let llargs = List.rev (List.map (build_expr curr_symbol_table builder) (List.rev args)) in
-      let result = f ^ "_result" in
-      L.build_call fdef (Array.of_list llargs) result builder
-    | SListLiteral list  ->
-      let first_elem = fst (List.hd list) in
-      let v = Array.map (fun e -> build_expr curr_symbol_table builder e) (Array.of_list list) in
-      (L.const_array (ltype_of_typ first_elem) v) 
-    | SListAccess(id, index) ->
-      let ind = (build_expr curr_symbol_table builder index)
-      in let value = L.build_gep (lookup curr_symbol_table id) [| (L.const_int i32_t 0); ind |] "tmp" builder
-      in L.build_load value "tmp" builder
+         let int_format_str = L.build_global_stringptr "%d\n" "fmt" builder in
+          L.build_call printf_func [| int_format_str ; (build_expr curr_symbol_table builder e) |]
+           "printf" builder
+      | SCall ("prints", [e]) ->
+          L.build_call printf_func [| (build_expr curr_symbol_table builder e) |]
+          "prints" builder
+      | SCall ("free", [e]) ->
+          L.build_free (build_expr curr_symbol_table builder e) builder
+      | SCall (f, args) ->
+        let (fdef, fdecl) = StringMap.find f function_decls in
+        let llargs = List.rev (List.map (build_expr curr_symbol_table builder) (List.rev args)) in
+        let result  = (match (fdecl.srtyp) with 
+          None -> "" 
+          | _ -> f ^ "_result")
+        in
+        L.build_call fdef (Array.of_list llargs) result builder
 
-    | SListIndAssign (s, idx, e) -> 
-      let e' = build_expr curr_symbol_table builder e and
-      ind = build_expr curr_symbol_table builder idx
+      | SListLiteral list  ->
+        let first_elem = fst (List.hd list) in
+        let v = Array.map (fun e -> build_expr curr_symbol_table builder e) (Array.of_list list) in
+        (L.const_array (ltype_of_typ first_elem) v) 
+      | SListAccess(id, index) ->
+        let ind = (build_expr curr_symbol_table builder index)
+        in let value = L.build_gep (lookup curr_symbol_table id) [| (L.const_int i32_t 0); ind |] "tmp" builder
+        in L.build_load value "tmp" builder
+      | SListIndAssign (s, idx, e) -> 
+        let e' = build_expr curr_symbol_table builder e and
+        ind = build_expr curr_symbol_table builder idx
+        in
+        let el = L.build_gep (lookup curr_symbol_table s) [| (L.const_int i32_t 0); ind |] "" builder and
+        e' = e'
       in
-      let el = L.build_gep (lookup curr_symbol_table s) [| (L.const_int i32_t 0); ind |] "" builder and
-      e' = e'
-    in
-      ignore(L.build_store e' el builder); e'
-
-
+        ignore(L.build_store e' el builder); e'
   in
 
   (* LLVM insists each basic block end with exactly one "terminator"
@@ -164,6 +247,8 @@ let translate (code: Sast.scode list) =
   match L.block_terminator (L.insertion_block builder) with
     Some _ -> ()
   | None -> ignore (instr builder) in
+
+ 
   
 
   (* Build the code for the given statement; return the builder for
@@ -243,9 +328,12 @@ let translate (code: Sast.scode list) =
     
     (* Build the code for each statement in the function *)
     let complete_func_builder = build_stmt the_function local_symbol_table func_builder (SBlock fdecl.sbody) in
-
-    (* Add a return if the last block falls off the end *)
-    add_terminal complete_func_builder (L.build_ret (L.const_int i32_t 0)); 
+    
+    let () = (match fdecl.srtyp with
+      None -> ignore(L.build_ret_void complete_func_builder);
+      | _ -> (* Add a return if the last block falls off the end *)
+        ignore(add_terminal complete_func_builder (L.build_ret (L.const_int i32_t 0)))); 
+    in
     builder
   in
 
