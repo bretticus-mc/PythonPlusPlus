@@ -21,6 +21,8 @@ module StringMap = Map.Make(String)
 let var_map = Hashtbl.create 12345
 
 
+
+
 (* translate : Sast.program -> Llvm.module *)
 let translate (code: Sast.scode list) =
   let context    = L.global_context () in
@@ -28,7 +30,6 @@ let translate (code: Sast.scode list) =
   (* Create the LLVM compilation module into which
      we will generate code *)
   let the_module = L.create_module context "PythonPP" in
-
   (* Get types from the context *)
   let i32_t      = L.i32_type    context (* 32-bit int type *)
   and i8_t       = L.i8_type     context (* Characters *)
@@ -37,7 +38,6 @@ let translate (code: Sast.scode list) =
   and string_t   = L.pointer_type   (L.i8_type context) (* String type *)
   and none_t     = L.void_type   context in 
   let vpoint_t   = L.pointer_type i8_t
-
 in
 
   (* Return the LLVM type for a PythonPP type *)
@@ -47,9 +47,15 @@ in
     | A.None  -> none_t 
     | A.Float -> float_t
     | A.String -> string_t
+    | A.Array(t, n) ->  L.array_type (ltype_of_typ t) n
     | A.Pointer p ->
-        if p == A.None then vpoint_t else L.pointer_type (ltype_of_typ p)
-  in
+      if p == A.None then vpoint_t else L.pointer_type (ltype_of_typ p)
+  in  
+ 
+  let printf_t : L.lltype =
+    L.var_arg_function_type i32_t [| L.pointer_type i8_t |] in
+  let printf_func : L.llvalue =
+    L.declare_function "printf" printf_t the_module in
 
   (* Define each function (arguments and return type) so we can
      call it even before we've created its body *)
@@ -65,10 +71,10 @@ in
       | SStmt(stmt) -> map
       in
     List.fold_left func_decl_intermediary StringMap.empty code in
-  let printf_t : L.lltype =
+(*  let printf_t : L.lltype =
     L.var_arg_function_type i32_t [| L.pointer_type i8_t |] in
   let printf_func : L.llvalue =
-    L.declare_function "printf" printf_t the_module in
+    L.declare_function "printf" printf_t the_module in *)
 
   (* Return the value for a variable or formal argument.
       Check local names first, then global names *)
@@ -77,6 +83,8 @@ in
   in
 
  
+
+  
   (* Construct code for an expression; return its value *)
   let rec build_expr curr_symbol_table builder ((_, e) : sexpr) = match e with
      SLiteral i  -> L.const_int i32_t i
@@ -103,9 +111,20 @@ in
                 let e1' = build_expr curr_symbol_table builder s in
                 ignore (L.build_store e2' e1' builder) ;
                 e2'
+            | SListAccess (array_id, index) -> 
+              let index' = build_expr curr_symbol_table builder index in
+              let element_pointer = L.build_gep (lookup curr_symbol_table array_id) [|(L.const_int i32_t 0); index'|] "" builder in
+              ignore(L.build_store e2' element_pointer builder); e2'
             | _ -> raise (Failure "error: failed to assign value")
-          in
-          e
+            in e
+    | SListLiteral list  ->
+      let first_elem = fst (List.hd list) in
+      let v = Array.map (fun e -> build_expr curr_symbol_table builder e) (Array.of_list list) in
+      (L.const_array (ltype_of_typ first_elem) v) 
+    | SListAccess(id, index) ->
+      let ind = (build_expr curr_symbol_table builder index)
+      in let value = L.build_gep (lookup curr_symbol_table id) [| (L.const_int i32_t 0); ind |] "tmp" builder
+      in L.build_load value "tmp" builder
     | SVariableInit(var_name, var_typ, s_expr) -> let s_expr' = build_expr curr_symbol_table builder s_expr in
       let _ = (match var_typ with 
         Pointer(s) -> 

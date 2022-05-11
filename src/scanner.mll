@@ -35,7 +35,6 @@
 		List.fold_left calculate_space 0 parsed_string
 	
 	let last_token_newline = ref true
-
 }
 (* 
 	OCamllex Regex Syntax:
@@ -119,11 +118,10 @@ rule scan_token = parse
 	| "int" { INT }
 	| "String" { STRING }
 	| "None" { NONE }
-	(*| "NULL" {NULL} *)
 	| "return" { RETURN }
 	| "float" { FLOAT }
+	| "List" { LIST }
 	| "sizeof" {SIZEOF}
-	(* | "new" {NEW} *)
 	| "#" { read_single_line_comment lexbuf }
 	| "\"\"\"" { read_multi_line_comment lexbuf }
 	| digit+ as lem  { INT_LITERAL(int_of_string lem) }

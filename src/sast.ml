@@ -18,11 +18,11 @@ and sx =
   | SAssign of sexpr * sexpr
   (* call *)
   | SCall of string * sexpr list
+  | SListLiteral of sexpr list
+  | SListAccess of string * sexpr
   | SSubscript of sexpr * sexpr
   | SRefer of string
   | SDeref of sexpr
-  (*| SNew of typ *)
-
 
 type sstmt =
     SBlock of sstmt list
@@ -53,19 +53,18 @@ let rec string_of_sexpr (t, e) =
         SLiteral(l) -> string_of_int l
       | SFloatLit(l) -> l
       | SStringLit(l) -> l
+      | SListLiteral(elem) -> "[" ^ String.concat ", " (List.map string_of_sexpr elem) ^ "]"
       | SBoolLit(b) -> if b then "True"  else "False"
       | SId(s) -> s
       | SBinop(e1, o, e2) -> "Binop: " ^
         string_of_sexpr e1 ^ " " ^ string_of_op o ^ " " ^ string_of_sexpr e2
       | SUnop(o, e) -> string_of_uop o ^ string_of_sexpr e
-      | SAssign (v, e) -> string_of_sexpr v ^ " = " ^ string_of_sexpr e
-      (* | SAlloc(s,t) -> "*"^s^ ":=" ^ string_of_typ t  *)
+      | SAssign (v, e) -> "Assign: " ^ string_of_sexpr v ^ " = " ^ string_of_sexpr e
       | SVariableInit(v, t, e) -> "SVariable Init: " ^ v ^ " : " ^ string_of_typ t ^ " = " ^ string_of_sexpr e
-      | SCall (f, el) ->
-        f ^ "(" ^ String.concat ", " (List.map string_of_sexpr el) ^ ")"
-      (* | SCast(e,t) -> "st" *)
+      | SCall(f, el) ->
+          f ^ "(" ^ String.concat ", " (List.map string_of_sexpr el) ^ ")"
+      | SListAccess(i, e) -> "SListAccess: " ^ i ^ "[" ^ string_of_sexpr e ^ "]"
       | SSubscript (e, s) -> string_of_sexpr e ^ "[" ^ string_of_sexpr s ^ "]"
-      (* | SNew(t) ->  "new(" ^ string_of_typ t ^ ")\n" *)
       | SRefer s -> "SRefer: &" ^ s
       | SDeref e -> "SDeref: *" ^ string_of_sexpr e
     ) ^ ")"

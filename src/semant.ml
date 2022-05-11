@@ -78,16 +78,21 @@ in
 (* Raise an exception if the given rvalue type cannot be assigned to
    the given lvalue type *)
 let check_assign lvaluet rvaluet err =
-    let typ =
+    let rvaluet' = match rvaluet with 
+      Array(arr_type, _) -> arr_type
+      | _ -> rvaluet
+    in
+    let matched_typ =
       match lvaluet with
       | Pointer None ->
-          if is_pointer rvaluet then rvaluet else raise (Failure err)
+          if is_pointer rvaluet' then rvaluet' else raise (Failure err)
       | Pointer p_typ ->
-          if rvaluet = Pointer None || rvaluet = p_typ then lvaluet
+          if rvaluet' = Pointer None || rvaluet' = p_typ then lvaluet
             else raise (Failure err)
-      | _ -> if lvaluet = rvaluet then lvaluet else raise (Failure err)
+      | Array(arr_type, _) -> arr_type
+      | _ -> if lvaluet = rvaluet' then lvaluet else raise (Failure err)
   in
-  typ
+  matched_typ
 in
 let check_args lvaluet rvaluet err = 
   if lvaluet = rvaluet then lvaluet else raise (Failure err)
@@ -97,6 +102,7 @@ let type_of_identifier symbol_table s =
   try Hashtbl.find symbol_table s
   with Not_found -> raise (Failure ("undeclared identifier " ^ s))
 in
+
 let deref p =
     match p with
     | Pointer s -> s
@@ -115,16 +121,7 @@ let rec check_expr symbol_table = function
         string_of_typ right_hand_type ^ " in " ^ string_of_expr ex in
         let _ = check_assign var_type right_hand_type err in
         ignore(Hashtbl.add symbol_table var_name var_type);  (* Add Variable to Hashtable *)
-      (var_type, SVariableInit(var_name, var_type, (check_expr symbol_table e)))
-    (*
-    | Assign(var, e) as ex ->
-      let lt = type_of_identifier symbol_table var
-      and (rt, e') = check_expr symbol_table e in
-      let err = "illegal assignment " ^ string_of_typ lt ^ " = " ^
-                string_of_typ rt ^ " in " ^ string_of_expr ex
-    in
-      (check_assign lt rt err, SAssign(var, (rt, e')))
-    *)
+        (var_type, SVariableInit(var_name, var_type, (check_expr symbol_table e)))
     | Assign (e1, e2) as ex ->
         let t1, e1' = check_expr symbol_table e1 and (t2, e2') = check_expr symbol_table e2 in    
         let err =
@@ -132,7 +129,7 @@ let rec check_expr symbol_table = function
               ^ " in " ^ string_of_expr ex
              and vt =
                 match e1 with
-                | Id _ | Subscript (_, _) | Deref _ -> t1
+                | Id _ | Subscript (_, _) | Deref _ | ListAccess _ -> t1
                  | _ -> raise (Failure "left expression is not assignable")
              in
              (check_assign t1 t2 err, SAssign ((vt, e1'), (t2, e2')))
@@ -141,8 +138,6 @@ let rec check_expr symbol_table = function
           let ty = match op with
             Neg when t = Int || t = Float -> t 
           | Not when t = Bool -> Bool 
-          (*| Ampy when t = Int || t = Float || t = String -> t
-          | Bitty when t = Int || t = Float || t = String -> t *)
           | _ -> raise (Failure ("illegal unary operator " ^ 
                                  string_of_uop op ^ string_of_typ t ^
                                  " in " ^ string_of_expr ex))
@@ -186,8 +181,21 @@ let rec check_expr symbol_table = function
                         " expected " ^ string_of_typ ft ^ " in " ^ string_of_expr e
               in (check_args ft et err, e')
         in
-      let args' = List.map2 check_call fd.formals args
-      in (fd.rtyp, SCall(fname, args'))
+        let args' = List.map2 check_call fd.formals args
+        in (fd.rtyp, SCall(fname, args'))
+    | ListLiteral values ->
+      let check_types e (e1, _) = 
+        if e != e1 then raise (Failure ("Different types not allowed in the same list")) 
+        else e1
+      and l' = List.map (check_expr symbol_table) values in
+        (match l' with
+        [] -> raise (Failure "empty literals not allowed")
+      | _ -> 
+        let first_elem = List.fold_left check_types (fst (List.hd l')) l' in 
+        (Array(first_elem, List.length l'), SListLiteral(l')) )
+    | ListAccess(l, i) ->
+      let lt = (type_of_identifier symbol_table l)
+      in let v = check_expr symbol_table i in (lt, SListAccess(l, v))
       (* subscript main expr must be a pointer and the subscript must be integer *)
     | Subscript (e, s) ->
           let te, e' = check_expr symbol_table e and ts, s' = check_expr  symbol_table  s in
@@ -200,7 +208,6 @@ let rec check_expr symbol_table = function
             in
             (ts, SSubscript ((te, e'), (ts, s')))
       | Refer s -> (Pointer (type_of_identifier symbol_table s), SRefer s)
-
       | Deref e ->
           let t, e' = check_expr symbol_table e in
           if is_pointer t then (deref t, SDeref (t, e'))

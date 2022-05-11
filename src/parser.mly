@@ -3,7 +3,7 @@ open Ast
 %}
 
 /* Types */
-%token INT FLOAT BOOL STRING POINTER
+%token INT FLOAT BOOL STRING POINTER LIST
 
 /* Operators */
 %token PLUS MINUS MULT DIV 
@@ -35,7 +35,7 @@ open Ast
 %left PLUS MINUS MULT DIV
 %left EXCLAMATION NEG
 %left LPAREN
-%left LBRACKET
+%left LBRACKET RBRACKET
 
 %%
 program:
@@ -59,7 +59,8 @@ typ:
   | FLOAT  { Float }
   | STRING { String }
   | NONE { None }
-  | MULT typ{Pointer($2)}
+  | LIST LBRACKET typ COMMA INT_LITERAL RBRACKET  { Array($3, $5) }
+  | MULT typ {Pointer($2)}
 
 /* fdecl 
 def main(x: int, y: int) -> None:
@@ -106,6 +107,7 @@ expr:
   | BLIT             { BoolLit($1)            }
   | STRING_LITERAL   { StringLit($1) } 
   | ID               { Id($1)                 }
+  | list_lit { $1 }
   | expr PLUS   expr { Binop($1, Add,   $3)   }
   | expr MINUS  expr { Binop($1, Sub,   $3)   }
   | expr MULT expr   { Binop($1, Mult,   $3)   }
@@ -120,11 +122,14 @@ expr:
   | EXCLAMATION expr     { Unop(Not, $2) }
   | MULT expr %prec EXCLAMATION{ Deref $2 } 
   | BIT_AND ID { Refer $2 }
-  | expr LBRACKET expr RBRACKET {Subscript($1, $3)}
   | expr EQ expr   { Assign($1, $3) }
   | ID COLON typ EQ expr { VariableInit($1, $3, $5) } /* Variable Initialization */ 
   /* call */
   | ID LPAREN args_opt RPAREN { Call ($1, $3)  } /* args_opt = List of Arguments */
+  | ID LBRACKET expr RBRACKET { ListAccess($1, $3) }
+
+list_lit:
+  LBRACKET args_opt RBRACKET { ListLiteral($2) }
 
 /* args_opt*/
 args_opt:

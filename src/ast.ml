@@ -1,9 +1,9 @@
 type op = Add | Sub | Mult | Div | Equal | Neq | Less | Greater | And | Or | Eq_Compar
-  | Geq | Leq (*| BitAnd | BitOr | Mod | Power *)
+  | Geq | Leq 
       
-type uop = Neg | Not (*| Bitty | Ampy *)
+type uop = Neg | Not 
 
-type typ = Int | Bool | Float | None | String | Pointer of typ
+type typ = Int | Bool | Float | None | String | Pointer of typ | Array of typ * int
 
 
 (* Defining what expressions can be *) 
@@ -18,13 +18,12 @@ type expr =
   | Unop of uop * expr
   (* function call *)
   | Call of string * expr list (* Function Name and Function Arguments  *)
-  (* | Cast of typ * expr *)
+  | ListLiteral of expr list
+  | ListAccess of string * expr
   | Subscript of expr * expr
-  (* | Alloc of string * typ *)
   | Deref of expr
   | Refer of string
   | Assign of expr * expr
-  (*| New of typ *)  
 
 (* Defining what statements can be *)
 type stmt =
@@ -32,7 +31,6 @@ type stmt =
   | Expr of expr
   | If of expr * stmt list * stmt list
   | While of expr * stmt list
-  (* | For of expr * stmt * stmt *)
   (* return *)
   | Return of expr
 
@@ -74,9 +72,6 @@ let string_of_op = function
   | Greater -> ">"
   | And -> "and"
   | Or -> "or"
-  (*| Mod -> "%"
-  | BitAnd -> "&"
-  | BitOr -> "|" *)
 
 let struct_of_decl dec = 
    "struct" ^ dec.structName  ^ "{" ^ String.concat ", " (List.map fst dec.structFields) ^"}\n"   
@@ -87,13 +82,13 @@ let rec string_of_typ = function
   | Float -> "float"
   | String -> "String"
   | None -> "None"
+  | Array(t, n) -> (string_of_typ t) ^ "[" ^ (string_of_int n) ^ "]"
   | Pointer t ->  "Pointer: *" ^ string_of_typ t 
 
   let string_of_uop = function
     Neg -> "-"
   | Not -> "!"
-  (*| Bitty -> "*"
-  | Ampy -> "&"*)
+
   
 let rec string_of_expr = function
     Literal(l) -> "IntLit: " ^ string_of_int l
@@ -105,14 +100,14 @@ let rec string_of_expr = function
     string_of_expr e1 ^ " " ^ string_of_op o ^ " " ^ string_of_expr e2
   | Assign(v, e) -> string_of_expr v ^ " = " ^ string_of_expr e
   | Unop(o, e) -> string_of_uop o ^ string_of_expr e
-  | VariableInit(v, t, e) -> v ^ " : " ^ string_of_typ t ^ " = " ^ string_of_expr e
-  (* | Alloc(s,t) ->  "*"^s ^ ":=" ^ "(" ^ string_of_typ t ^")"  *)
+  | VariableInit(v, t, e) -> "VariableInit: " ^ v ^ " : " ^ string_of_typ t ^ " = " ^ string_of_expr e
   | Call(f, el) ->
       f ^ "(" ^ String.concat ", " (List.map string_of_expr el) ^ ")"
+  | ListLiteral(elem) -> "ListLiteral: [" ^ String.concat ", " (List.map string_of_expr elem) ^ "]"
+  | ListAccess(i, e) -> "ListAccess: " ^ i ^ "[" ^ string_of_expr e ^ "]"
   | Subscript (e, s) -> string_of_expr e ^ "[" ^ string_of_expr s ^ "]"
   | Deref e ->  "Deref: *" ^ string_of_expr e
   | Refer s -> "Refer: &"^ s
-  (*| New(t) -> "new(" ^ string_of_typ t ^ ")\n" *)
 
 let rec string_of_stmt = function
   Block(stmts) ->
