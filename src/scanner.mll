@@ -35,7 +35,6 @@
 		List.fold_left calculate_space 0 parsed_string
 	
 	let last_token_newline = ref true
-
 }
 (* 
 	OCamllex Regex Syntax:
@@ -63,9 +62,7 @@ rule scan_token = parse
 		let prev_indent_level = Stack.top indention_stack in
 		if curr_indent_level > prev_indent_level then
 			((ignore(enqueue_indents queue_of_tokens prev_indent_level curr_indent_level);
-			Stack.push curr_indent_level indention_stack;
-
-			);
+			Stack.push curr_indent_level indention_stack;);
 			NEWLINE
 			)
 		else if curr_indent_level = prev_indent_level then
@@ -91,14 +88,15 @@ rule scan_token = parse
 	| ";" { SEMI }
 	| "=" { EQ }
 	| "%" { MOD }
+	| "&"  {BIT_AND}
 	| "+" { PLUS }
 	| "-" { MINUS }
 	| "*" { MULT }
 	| "/" { DIV }
 	| "+=" { PLUS_EQ }
-	| "-=" { MINUS_EQ }
-	| "*=" { MULT_EQ }
-	| "/=" { DIV_EQ }
+    | "-=" { MINUS_EQ }
+    | "*=" { MULT_EQ }
+    | "/=" { DIV_EQ }
 	| "<" { LT }
 	| ">" { GT }
 	| "->" { ARROW }
@@ -123,6 +121,7 @@ rule scan_token = parse
 	| "return" { RETURN }
 	| "float" { FLOAT }
 	| "List" { LIST }
+	| "sizeof" {SIZEOF}
 	| "#" { read_single_line_comment lexbuf }
 	| "\"\"\"" { read_multi_line_comment lexbuf }
 	| digit+ as lem  { INT_LITERAL(int_of_string lem) }
