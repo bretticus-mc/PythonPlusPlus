@@ -196,12 +196,6 @@ let rec check_expr symbol_table = function
     | ListAccess(l, i) ->
       let lt = (type_of_identifier symbol_table l)
       in let v = check_expr symbol_table i in (lt, SListAccess(l, v))
-    | ListIndAssign(l, i, e)->
-      let lt = (type_of_identifier symbol_table l)
-      and (rt, e') = check_expr symbol_table e 
-      and (ri, i) = check_expr symbol_table i 
-      in
-      (lt, SListIndAssign(l, (ri, i), (rt, e')))
       (* subscript main expr must be a pointer and the subscript must be integer *)
     | Subscript (e, s) ->
           let te, e' = check_expr symbol_table e and ts, s' = check_expr  symbol_table  s in

@@ -20,7 +20,6 @@ and sx =
   | SCall of string * sexpr list
   | SListLiteral of sexpr list
   | SListAccess of string * sexpr
-  | SListIndAssign of string * sexpr * sexpr
   | SSubscript of sexpr * sexpr
   | SRefer of string
   | SDeref of sexpr
@@ -65,7 +64,6 @@ let rec string_of_sexpr (t, e) =
       | SCall(f, el) ->
           f ^ "(" ^ String.concat ", " (List.map string_of_sexpr el) ^ ")"
       | SListAccess(i, e) -> "SListAccess: " ^ i ^ "[" ^ string_of_sexpr e ^ "]"
-      | SListIndAssign(l, i, e) -> "SListIndAssign: " ^ l ^ "[" ^ string_of_sexpr i ^ "]" ^ " = " ^ string_of_sexpr e 
       | SSubscript (e, s) -> string_of_sexpr e ^ "[" ^ string_of_sexpr s ^ "]"
       | SRefer s -> "SRefer: &" ^ s
       | SDeref e -> "SDeref: *" ^ string_of_sexpr e

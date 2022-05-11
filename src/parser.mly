@@ -127,7 +127,6 @@ expr:
   /* call */
   | ID LPAREN args_opt RPAREN { Call ($1, $3)  } /* args_opt = List of Arguments */
   | ID LBRACKET expr RBRACKET { ListAccess($1, $3) }
-  | ID LBRACKET expr RBRACKET EQ expr { ListIndAssign($1, $3, $6) }
 
 list_lit:
   LBRACKET args_opt RBRACKET { ListLiteral($2) }

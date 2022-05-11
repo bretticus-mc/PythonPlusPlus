@@ -111,6 +111,10 @@ in
                 let e1' = build_expr curr_symbol_table builder s in
                 ignore (L.build_store e2' e1' builder) ;
                 e2'
+            | SListAccess (array_id, index) -> 
+              let index' = build_expr curr_symbol_table builder index in
+              let element_pointer = L.build_gep (lookup curr_symbol_table array_id) [|(L.const_int i32_t 0); index'|] "" builder in
+              ignore(L.build_store e2' element_pointer builder); e2'
             | _ -> raise (Failure "error: failed to assign value")
             in e
     | SListLiteral list  ->
@@ -121,14 +125,6 @@ in
       let ind = (build_expr curr_symbol_table builder index)
       in let value = L.build_gep (lookup curr_symbol_table id) [| (L.const_int i32_t 0); ind |] "tmp" builder
       in L.build_load value "tmp" builder
-    | SListIndAssign (s, idx, e) -> 
-      let e' = build_expr curr_symbol_table builder e and
-      ind = build_expr curr_symbol_table builder idx
-      in
-      let el = L.build_gep (lookup curr_symbol_table s) [| (L.const_int i32_t 0); ind |] "" builder and
-      e' = e'
-      in
-      ignore(L.build_store e' el builder); e'
     | SVariableInit(var_name, var_typ, s_expr) -> let s_expr' = build_expr curr_symbol_table builder s_expr in
       let _ = (match var_typ with 
         Pointer(s) -> 

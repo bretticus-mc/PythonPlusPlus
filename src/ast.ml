@@ -20,7 +20,6 @@ type expr =
   | Call of string * expr list (* Function Name and Function Arguments  *)
   | ListLiteral of expr list
   | ListAccess of string * expr
-  | ListIndAssign of string * expr * expr
   | Subscript of expr * expr
   | Deref of expr
   | Refer of string
@@ -106,7 +105,6 @@ let rec string_of_expr = function
       f ^ "(" ^ String.concat ", " (List.map string_of_expr el) ^ ")"
   | ListLiteral(elem) -> "ListLiteral: [" ^ String.concat ", " (List.map string_of_expr elem) ^ "]"
   | ListAccess(i, e) -> "ListAccess: " ^ i ^ "[" ^ string_of_expr e ^ "]"
-  | ListIndAssign(l, i, e) -> "ListIndAssign: " ^ l ^ "[" ^ string_of_expr i ^ "]" ^ " = " ^ string_of_expr e 
   | Subscript (e, s) -> string_of_expr e ^ "[" ^ string_of_expr s ^ "]"
   | Deref e ->  "Deref: *" ^ string_of_expr e
   | Refer s -> "Refer: &"^ s
