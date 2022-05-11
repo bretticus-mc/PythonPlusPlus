@@ -35,7 +35,7 @@ open Ast
 %left PLUS MINUS MULT DIV
 %left EXCLAMATION NEG
 %left LPAREN
-%left LBRACKET
+%left LBRACKET RBRACKET
 
 %%
 program:
@@ -122,7 +122,6 @@ expr:
   | EXCLAMATION expr     { Unop(Not, $2) }
   | MULT expr %prec EXCLAMATION{ Deref $2 } 
   | BIT_AND ID { Refer $2 }
-  | expr LBRACKET expr RBRACKET {Subscript($1, $3)}
   | expr EQ expr   { Assign($1, $3) }
   | ID COLON typ EQ expr { VariableInit($1, $3, $5) } /* Variable Initialization */ 
   /* call */

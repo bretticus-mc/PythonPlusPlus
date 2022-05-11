@@ -101,13 +101,12 @@ let rec string_of_expr = function
     string_of_expr e1 ^ " " ^ string_of_op o ^ " " ^ string_of_expr e2
   | Assign(v, e) -> string_of_expr v ^ " = " ^ string_of_expr e
   | Unop(o, e) -> string_of_uop o ^ string_of_expr e
-  | VariableInit(v, t, e) -> v ^ " : " ^ string_of_typ t ^ " = " ^ string_of_expr e
-  (* | Alloc(s,t) ->  "*"^s ^ ":=" ^ "(" ^ string_of_typ t ^")"  *)
+  | VariableInit(v, t, e) -> "VariableInit: " ^ v ^ " : " ^ string_of_typ t ^ " = " ^ string_of_expr e
   | Call(f, el) ->
       f ^ "(" ^ String.concat ", " (List.map string_of_expr el) ^ ")"
-  | ListLiteral(elem) -> "[" ^ String.concat ", " (List.map string_of_expr elem) ^ "]"
-  | ListAccess(i, e) -> i ^ "[" ^ string_of_expr e ^ "]"
-  | ListIndAssign(l, i, e) -> l ^ "[" ^ string_of_expr i ^ "]" ^ " = " ^ string_of_expr e 
+  | ListLiteral(elem) -> "ListLiteral: [" ^ String.concat ", " (List.map string_of_expr elem) ^ "]"
+  | ListAccess(i, e) -> "ListAccess: " ^ i ^ "[" ^ string_of_expr e ^ "]"
+  | ListIndAssign(l, i, e) -> "ListIndAssign: " ^ l ^ "[" ^ string_of_expr i ^ "]" ^ " = " ^ string_of_expr e 
   | Subscript (e, s) -> string_of_expr e ^ "[" ^ string_of_expr s ^ "]"
   | Deref e ->  "Deref: *" ^ string_of_expr e
   | Refer s -> "Refer: &"^ s

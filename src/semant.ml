@@ -78,16 +78,21 @@ in
 (* Raise an exception if the given rvalue type cannot be assigned to
    the given lvalue type *)
 let check_assign lvaluet rvaluet err =
-    let typ =
+    let rvaluet' = match rvaluet with 
+      Array(arr_type, _) -> arr_type
+      | _ -> rvaluet
+    in
+    let matched_typ =
       match lvaluet with
       | Pointer None ->
-          if is_pointer rvaluet then rvaluet else raise (Failure err)
+          if is_pointer rvaluet' then rvaluet' else raise (Failure err)
       | Pointer p_typ ->
-          if rvaluet = Pointer None || rvaluet = p_typ then lvaluet
+          if rvaluet' = Pointer None || rvaluet' = p_typ then lvaluet
             else raise (Failure err)
-      | _ -> if lvaluet = rvaluet then lvaluet else raise (Failure err)
+      | Array(arr_type, _) -> arr_type
+      | _ -> if lvaluet = rvaluet' then lvaluet else raise (Failure err)
   in
-  typ
+  matched_typ
 in
 let check_args lvaluet rvaluet err = 
   if lvaluet = rvaluet then lvaluet else raise (Failure err)
@@ -116,16 +121,7 @@ let rec check_expr symbol_table = function
         string_of_typ right_hand_type ^ " in " ^ string_of_expr ex in
         let _ = check_assign var_type right_hand_type err in
         ignore(Hashtbl.add symbol_table var_name var_type);  (* Add Variable to Hashtable *)
-      (var_type, SVariableInit(var_name, var_type, (check_expr symbol_table e)))
-    (*
-    | Assign(var, e) as ex ->
-      let lt = type_of_identifier symbol_table var
-      and (rt, e') = check_expr symbol_table e in
-      let err = "illegal assignment " ^ string_of_typ lt ^ " = " ^
-                string_of_typ rt ^ " in " ^ string_of_expr ex
-    in
-      (check_assign lt rt err, SAssign(var, (rt, e')))
-    *)
+        (var_type, SVariableInit(var_name, var_type, (check_expr symbol_table e)))
     | Assign (e1, e2) as ex ->
         let t1, e1' = check_expr symbol_table e1 and (t2, e2') = check_expr symbol_table e2 in    
         let err =
@@ -133,7 +129,7 @@ let rec check_expr symbol_table = function
               ^ " in " ^ string_of_expr ex
              and vt =
                 match e1 with
-                | Id _ | Subscript (_, _) | Deref _ -> t1
+                | Id _ | Subscript (_, _) | Deref _ | ListAccess _ -> t1
                  | _ -> raise (Failure "left expression is not assignable")
              in
              (check_assign t1 t2 err, SAssign ((vt, e1'), (t2, e2')))
