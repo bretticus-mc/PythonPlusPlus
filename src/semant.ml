@@ -245,22 +245,29 @@ and check_top_stmt curr_symbol_table = function
     check_binds "formal" func.formals;
 
     (* Build local symbol table to check that there are no duplicate formals *)
-    let local_symbol_table = Hashtbl.copy curr_symbol_table in 
+    let local_symbol_table = Hashtbl.copy curr_symbol_table in
+
     let rec build_local_symbol_table table formals = 
       match formals with
       | [] -> table
       | hd::tl -> Hashtbl.add table (fst hd) (snd hd); build_local_symbol_table table tl
-      (* *)
     in
     ignore(build_local_symbol_table local_symbol_table func.formals);
+
+    let raise_return_error t e = raise (
+        Failure ("return gives " ^ string_of_typ t ^ " expected " ^
+              string_of_typ func.rtyp ^ " in " ^ string_of_expr e))
+    in
 
     let rec check_func_statements = function
       [] -> []
     | Return e :: sl -> let (t, e') = check_expr local_symbol_table e in
-      if t = func.rtyp then SReturn (t, e') :: check_func_statements sl
-      else raise (
-          Failure ("return gives " ^ string_of_typ t ^ " expected " ^
-                  string_of_typ func.rtyp ^ " in " ^ string_of_expr e))
+      let return_val = match t with
+        Array(arr_typ, _) -> if arr_typ = func.rtyp then SReturn (t, e')
+          else (raise_return_error t e)
+        | _ -> if t = func.rtyp then SReturn (t, e')
+          else (raise_return_error t e)
+        in return_val :: check_func_statements sl
     | s :: sl -> check_top_stmt local_symbol_table s :: check_func_statements sl
     in
 
@@ -268,7 +275,7 @@ and check_top_stmt curr_symbol_table = function
     { srtyp = func.rtyp;
       sfname = func.fname;
       sformals = func.formals;
-      sbody = check_func_statements func.body
+      sbody = List.rev (check_func_statements (List.rev func.body))
     }
   in
   let check_code curr_symbol_table = function
