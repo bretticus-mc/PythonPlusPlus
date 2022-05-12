@@ -124,7 +124,7 @@ let string_of_fdecl fdecl =
     "def " ^ fdecl.fname ^ "(" ^ 
     String.concat ", " (List.map (fun f -> "Arg_name:("^ (fst f) ^ ") Arg_Type:(" ^ (string_of_typ (snd f)) ^") ") fdecl.formals) ^ 
     ") -> " ^ string_of_typ fdecl.rtyp ^ ": \n" ^
-    String.concat "" (List.map string_of_stmt fdecl.body)
+    String.concat "" (List.map string_of_stmt fdecl.body) ^ "End of function\n"
 
 
 let string_of_scode code = match code with
